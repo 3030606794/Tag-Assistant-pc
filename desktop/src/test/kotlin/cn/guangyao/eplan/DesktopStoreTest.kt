@@ -499,7 +499,8 @@ class DesktopControllerEditsTest {
         val store = DesktopStore(root)
         val source = File(temporary.root, "damaged.pdf").apply { writeText("%PDF-1.7\n") }
         val document = store.importDocument(source, { false }) { _, _ -> }
-        val previous = sampleDesktopResult(document.id).copy(documentName = source.name)
+        val previous = sampleDesktopResult(document.id).let { result -> result.copy(documentName = source.name,
+            records = result.records.map { if (it.kind == RecordKind.FILE_LABEL) it.copy(text = source.name, sourceText = source.name) else it }) }
         store.saveWorkspace(PocketData(documents = listOf(document), results = listOf(previous)))
         val controller = DesktopController(root)
         try {
