@@ -58,7 +58,7 @@ def icon():
     image = image.resize((256, 256), Image.Resampling.LANCZOS)
     target = ROOT / "desktop" / "src" / "main" / "resources" / "branding" / "app.ico"
     image.save(target, sizes=[(16,16),(24,24),(32,32),(48,48),(64,64),(128,128),(256,256)])
-    image.save(target.with_suffix("png"))
+    image.save(target.with_suffix(".png"))
 
 
 def main():

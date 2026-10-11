@@ -430,4 +430,3 @@ private fun sampleDesktopExport(path: Path): ExportedFile = ExportedFile(
     mode = ExtractionMode.DEVICE, name = path.fileName.toString(), uri = path.toAbsolutePath().toString(),
     createdAt = 12345, bytes = 100, completed = true,
 )
-

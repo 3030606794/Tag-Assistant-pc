@@ -603,4 +603,3 @@ internal object DesktopExportFiles {
 
     private fun pathOf(file: ExportedFile): Path? = runCatching { Path.of(file.uri).toAbsolutePath().normalize() }.getOrNull()
 }
-

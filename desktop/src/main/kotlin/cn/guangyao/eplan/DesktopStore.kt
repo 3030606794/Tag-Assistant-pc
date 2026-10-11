@@ -418,4 +418,3 @@ internal object DesktopFileNames {
         return base + suffix
     }
 }
-
