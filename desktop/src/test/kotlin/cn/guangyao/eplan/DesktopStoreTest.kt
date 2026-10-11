@@ -296,6 +296,25 @@ class DesktopExportFilesTest {
         assertEquals("a different externally created file", Files.readString(target))
     }
 
+    @Test fun editingExistingFileKeepsIdentitySourceAndFavoriteButReportsNewSize() {
+        val directory = temporary.newFolder().toPath()
+        val target = DesktopExportFiles.writeNew(sampleDesktopResult(), directory)
+        val previous = sampleDesktopExport(target).copy(favorite = true, displayName = "保留收藏备注",
+            storageKey = DesktopExportFiles.key(target))
+
+        Files.writeString(target, "changed by an external editor", java.nio.file.StandardOpenOption.TRUNCATE_EXISTING)
+
+        assertEquals(previous.storageKey, DesktopExportFiles.key(target))
+        val refreshed = DesktopExportFiles.scan(directory, listOf(previous)).files.single()
+        assertEquals(previous.id, refreshed.id)
+        assertEquals(previous.resultId, refreshed.resultId)
+        assertEquals(previous.displayName, refreshed.displayName)
+        assertTrue(refreshed.favorite)
+        assertEquals(Files.size(target), refreshed.bytes)
+        DesktopExportFiles.delete(refreshed, directory, directory)
+        assertFalse(Files.exists(target))
+    }
+
     @Test fun trueDeletionRemovesOnlyChosenXlsxAndMissingFileCanBeCleaned() {
         val directory = temporary.newFolder().toPath()
         val target = directory.resolve("target.xlsx")
@@ -458,9 +477,62 @@ class DesktopControllerEditsTest {
             assertEquals(result, controller.state.value.selectedResult)
             assertFalse(controller.state.value.canUndo)
             assertNotNull(controller.state.value.message)
+            assertTrue(controller.state.value.lastTaskFailed)
+
+            controller.refreshExports()
+            withTimeout(10_000) { controller.awaitIdle() }
+            assertTrue("A silent scan must not erase the failure awaited by window close", controller.state.value.lastTaskFailed)
+
+            Files.delete(root.resolve("workspace.json/occupied"))
+            Files.delete(root.resolve("workspace.json"))
+            controller.editRecord("device-1", "1KM09")
+            withTimeout(10_000) { controller.awaitIdle() }
+            assertFalse(controller.state.value.lastTaskFailed)
+            assertEquals("1KM09", DesktopStore(root).load().data.results.single().records.single { it.id == "device-1" }.text)
         } finally {
             controller.close()
         }
+    }
+
+    @Test fun extractionFailureKeepsPreviousResultsAndImportedCopyAndReportsFailure() = runBlocking {
+        val root = temporary.newFolder().toPath()
+        val store = DesktopStore(root)
+        val source = File(temporary.root, "damaged.pdf").apply { writeText("%PDF-1.7\n") }
+        val document = store.importDocument(source, { false }) { _, _ -> }
+        val previous = sampleDesktopResult(document.id).copy(documentName = source.name)
+        store.saveWorkspace(PocketData(documents = listOf(document), results = listOf(previous)))
+        val controller = DesktopController(root)
+        try {
+            withTimeout(10_000) { controller.awaitIdle() }
+            controller.extract(ExtractionMode.DEVICE)
+            withTimeout(10_000) { controller.awaitIdle() }
+
+            assertTrue(controller.state.value.lastTaskFailed)
+            assertEquals(listOf(previous), controller.state.value.data.results)
+            assertEquals(listOf(previous), DesktopStore(root).load().data.results)
+            assertTrue(Files.isRegularFile(Path.of(document.path)))
+            assertTrue(source.exists())
+            assertNotNull(controller.state.value.message)
+        } finally { controller.close() }
+    }
+
+    @Test fun failedBatchImportReportsFailureAndKeepsEachAlreadyCommittedDocument() = runBlocking {
+        val root = temporary.newFolder().toPath()
+        val valid = File(temporary.root, "valid-header.pdf").apply { writeText("%PDF-1.7\n") }
+        val invalid = File(temporary.root, "invalid-header.pdf").apply { writeText("not a PDF") }
+        val controller = DesktopController(root)
+        try {
+            withTimeout(10_000) { controller.awaitIdle() }
+            controller.importFiles(listOf(valid, invalid))
+            withTimeout(10_000) { controller.awaitIdle() }
+
+            assertTrue(controller.state.value.lastTaskFailed)
+            assertEquals(valid.name, controller.state.value.data.documents.single().name)
+            assertEquals(controller.state.value.data.documents, DesktopStore(root).load().data.documents)
+            assertTrue(controller.state.value.message!!.contains(invalid.name))
+            assertTrue(valid.exists())
+            assertTrue(invalid.exists())
+        } finally { controller.close() }
     }
 
     @Test fun addedLabelCanBeUndoneAndDirectExportsAreImmediatelyIndexedWithoutOverwrite() = runBlocking {

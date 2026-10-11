@@ -1,5 +1,11 @@
 package cn.guangyao.eplan
 
+import com.sun.jna.Memory
+import com.sun.jna.Platform
+import com.sun.jna.platform.win32.Kernel32
+import com.sun.jna.platform.win32.WinBase
+import com.sun.jna.platform.win32.WinDef.DWORD
+import com.sun.jna.platform.win32.WinNT
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -47,6 +53,7 @@ data class DesktopState(
     val helperReport: String? = null,
     val canUndo: Boolean = false,
     val loaded: Boolean = false,
+    val lastTaskFailed: Boolean = false,
 ) {
     val selectedDocument: ImportedDocument? get() = data.documents.firstOrNull { it.id == selectedDocumentId }
     val selectedResult: ExtractionResult? get() = data.results.firstOrNull { it.id == selectedResultId }
@@ -89,7 +96,7 @@ class DesktopController(val root: Path) : AutoCloseable {
                 withContext(Dispatchers.IO) { startWatcher(Path.of(loaded.exportDirectory)) }
                 refreshPending.set(true)
             } catch (error: Exception) {
-                mutable.update { it.copy(message = "无法打开数据目录：" + describe(error), loaded = false) }
+                mutable.update { it.copy(message = "无法打开数据目录：" + describe(error), loaded = false, lastTaskFailed = true) }
             } finally {
                 busy.set(false)
                 if (closed.get()) scope.cancel()
@@ -125,12 +132,14 @@ class DesktopController(val root: Path) : AutoCloseable {
                     count++
                 } catch (error: Exception) {
                     imported?.let { runCatching { store.discardImported(it) } }
-                    if (cancelled.get() || error is InterruptedIOException) break
+                    if (cancelled.get() && error is InterruptedIOException) break
                     failures += source.name + "：" + describe(error)
+                    if (cancelled.get()) break
                 }
             }
             val summary = if (cancelled.get()) "已取消导入，已保存 " + count + " 份图纸。" else "已导入 " + count + " 份图纸。"
-            notice(summary + if (failures.isEmpty()) "" else "\n" + failures.joinToString("\n"))
+            publish { it.copy(message = summary + if (failures.isEmpty()) "" else "\n" + failures.joinToString("\n"),
+                lastTaskFailed = failures.isNotEmpty()) }
         }
     }
 
@@ -405,15 +414,17 @@ class DesktopController(val root: Path) : AutoCloseable {
         cancelled.set(false)
         taskEpoch.incrementAndGet()
         currentJob = scope.launch {
-            if (!quiet) mutable.update { it.copy(progress = JobProgress(true, 0f, description)) }
+            if (!quiet) mutable.update { it.copy(progress = JobProgress(true, 0f, description), lastTaskFailed = false) }
             try {
                 withContext(Dispatchers.IO) { body() }
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Exception) {
-                mutable.update { it.copy(message = if (error is InterruptedIOException) "任务已取消。" else describe(error)) }
+                val intentionalCancellation = error is InterruptedIOException && cancelled.get()
+                mutable.update { it.copy(message = if (intentionalCancellation) "任务已取消。" else describe(error),
+                    lastTaskFailed = it.lastTaskFailed || !intentionalCancellation) }
             } catch (error: OutOfMemoryError) {
-                mutable.update { it.copy(message = "内存不足，当前任务未完成；已保存的数据保留，请关闭大文件后重试。") }
+                mutable.update { it.copy(message = "内存不足，当前任务未完成；已保存的数据保留，请关闭大文件后重试。", lastTaskFailed = true) }
             } finally {
                 taskEpoch.incrementAndGet()
                 mutable.update { it.copy(progress = JobProgress()) }
@@ -494,8 +505,49 @@ internal object DesktopExportFiles {
 
     fun key(path: Path): String {
         val real = path.toRealPath()
+        if (Platform.isWindows()) return withWindowsHandle(real, deleting = false) { handle -> windowsKey(real, handle) }
         val attributes = Files.readAttributes(real, BasicFileAttributes::class.java)
-        return real.parent.toString() + "|" + (attributes.fileKey()?.toString() ?: real.toString())
+        val identity = attributes.fileKey() ?: throw IOException("系统未提供可靠的文件身份，已保留原文件。")
+        return real.parent.toString() + "|nio:" + identity + ":" + attributes.creationTime()
+    }
+
+    // OpenJDK Windows BasicFileAttributes.fileKey() always returns null. A path is not an identity.
+    // FILE_ID_INFO (24 bytes) gives volume + 128-bit ID; FILE_BASIC_INFO supplies birth time.
+    // https://learn.microsoft.com/windows/win32/api/winbase/ns-winbase-file_id_info
+    private fun windowsKey(path: Path, handle: WinNT.HANDLE): String {
+        val api = Kernel32.INSTANCE
+        Memory(24L).use { id ->
+            Memory(40L).use { basic ->
+                if (!api.GetFileInformationByHandleEx(handle, 18, id, DWORD(24L)) ||
+                    !api.GetFileInformationByHandleEx(handle, 0, basic, DWORD(40L))) {
+                    throw IOException("系统无法确认文件身份（Windows " + api.GetLastError() + "），已保留原文件，请使用本地 NTFS 导出目录。")
+                }
+                val fileId = id.getByteArray(8L, 16)
+                if (fileId.all { it == 0.toByte() } || basic.getInt(32L) and WinNT.FILE_ATTRIBUTE_REPARSE_POINT != 0) {
+                    throw IOException("文件身份不可靠或为链接，已保留原文件。")
+                }
+                val hexId = fileId.joinToString("") { (it.toInt() and 255).toString(16).padStart(2, '0') }
+                return path.parent.toString() + "|win:" + java.lang.Long.toUnsignedString(id.getLong(0L), 16) +
+                    ":" + hexId + ":" + java.lang.Long.toUnsignedString(basic.getLong(0L), 16)
+            }
+        }
+    }
+
+    private fun <T> withWindowsHandle(path: Path, deleting: Boolean, body: (WinNT.HANDLE) -> T): T {
+        val api = Kernel32.INSTANCE
+        val value = path.toAbsolutePath().toString()
+        val nativePath = when {
+            value.startsWith("\\\\?\\") -> value
+            value.startsWith("\\\\") -> "\\\\?\\UNC\\" + value.removePrefix("\\\\")
+            else -> "\\\\?\\" + value
+        }
+        val handle = api.CreateFile(nativePath, WinNT.FILE_READ_ATTRIBUTES or (if (deleting) WinNT.DELETE else 0),
+            WinNT.FILE_SHARE_READ or WinNT.FILE_SHARE_WRITE or (if (deleting) 0 else WinNT.FILE_SHARE_DELETE),
+            null, WinNT.OPEN_EXISTING, WinNT.FILE_FLAG_OPEN_REPARSE_POINT, null)
+        if (handle == WinBase.INVALID_HANDLE_VALUE) {
+            throw IOException("无法读取文件身份（Windows " + api.GetLastError() + "），原文件保留。")
+        }
+        try { return body(handle) } finally { api.CloseHandle(handle) }
     }
 
     fun writeNew(result: ExtractionResult, directory: Path, cancelled: () -> Boolean = { false }): Path {
@@ -540,7 +592,8 @@ internal object DesktopExportFiles {
             }
             error("同名导出文件过多，请整理导出目录。")
         } finally {
-            Files.deleteIfExists(temporary)
+            // The complete target has already been committed; leftover staging data is recoverable.
+            runCatching { Files.deleteIfExists(temporary) }
         }
     }
 
@@ -607,6 +660,21 @@ internal object DesktopExportFiles {
         if (Files.notExists(path)) return
         require(Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)) { "文件不是可删除的 Excel。" }
         require(path.toRealPath().parent == path.parent.toRealPath()) { "拒绝删除目录外文件。" }
+        if (Platform.isWindows()) {
+            // Holding a DELETE handle without sharing DELETE prevents a rename/replacement between
+            // validation and deletion. Delete disposition applies to this exact validated handle.
+            withWindowsHandle(path, deleting = true) { handle ->
+                val storageKey = windowsKey(path.toRealPath(), handle)
+                require(file.storageKey.isBlank() || file.storageKey == storageKey) { "文件已被外部替换，请刷新后确认新的文件再删除。" }
+                Memory(1L).use { disposition ->
+                    disposition.setByte(0L, 1.toByte())
+                    if (!Kernel32.INSTANCE.SetFileInformationByHandle(handle, 4, disposition, DWORD(1L))) {
+                        throw IOException("文件无法删除（Windows " + Kernel32.INSTANCE.GetLastError() + "），请关闭占用文件的程序后重试。")
+                    }
+                }
+            }
+            return
+        }
         require(file.storageKey.isBlank() || file.storageKey == key(path)) { "文件已被外部替换，请刷新后确认新的文件再删除。" }
         Files.delete(path)
     }

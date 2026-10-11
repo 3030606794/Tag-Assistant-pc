@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 import java.awt.Toolkit
 import java.awt.datatransfer.StringSelection
 import java.io.File
@@ -60,6 +61,7 @@ internal data class DesktopActions(
 fun DesktopApp(controller: DesktopController) {
     val state by controller.state.collectAsState()
     var localMessage by remember { mutableStateOf<String?>(null) }
+    var localFailure by remember { mutableStateOf(false) }
     LaunchedEffect(state.message) { if (state.message != null) localMessage = null }
     val actions = remember(controller) {
         DesktopActions(
@@ -77,12 +79,12 @@ fun DesktopApp(controller: DesktopController) {
             openFile = controller::openFile, openDataFolder = controller::openDataFolder, openExportFolder = controller::openExportFolder,
             runDiagnostics = controller::runDiagnostics,
             copyText = { text ->
-                try { Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(text), null); localMessage = "已复制标签内容。" }
-                catch (_: Exception) { localMessage = "剪贴板暂时不可用，请重试。" }
+                try { Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(text), null); localFailure = false; localMessage = "已复制到剪贴板。" }
+                catch (_: Exception) { localFailure = true; localMessage = "剪贴板暂时不可用，请重试。" }
             },
         )
     }
-    DesktopContent(if (state.message == null && localMessage != null) state.copy(message = localMessage) else state, actions)
+    DesktopContent(if (state.message == null && localMessage != null) state.copy(message = localMessage, lastTaskFailed = localFailure) else state, actions)
 }
 
 private fun chooseDesktopFiles(directory: Boolean, selected: (List<File>) -> Unit) {
@@ -106,6 +108,12 @@ private enum class DesktopPage(val title: String, val icon: String) {
 
 @Composable
 internal fun DesktopContent(state: DesktopState, actions: DesktopActions, initialPage: String = "workspace", initialSourceRecordId: String? = null) {
+    LaunchedEffect(state.message, state.lastTaskFailed) {
+        if (state.message != null && !state.lastTaskFailed) {
+            delay(5_000)
+            actions.clearMessage()
+        }
+    }
     var page by remember { mutableStateOf(DesktopPage.entries.firstOrNull { it.name.equals(initialPage, true) } ?: DesktopPage.WORKSPACE) }
     var mode by remember { mutableStateOf(ExtractionMode.FULL) }
     var modeMenu by remember { mutableStateOf(false) }

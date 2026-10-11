@@ -19,6 +19,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.text.style.TextOverflow
@@ -159,12 +160,14 @@ internal fun DesktopPdfPreview(document: ImportedDocument?, record: LabelRecord?
                     val fit = min(maxWidth.value / pageImage.width, maxHeight.value / pageImage.height)
                     val imageWidth = (pageImage.width * fit * zoom).dp
                     val imageHeight = (pageImage.height * fit * zoom).dp
-                    val primary = MaterialTheme.colorScheme.primary
+                    // PDF paper stays white in either app theme, so use its darker primary role.
+                    val colorScheme = MaterialTheme.colorScheme
+                    val sourceHighlight = if (colorScheme.surface.luminance() < .5f) colorScheme.inversePrimary else colorScheme.primary
                     val viewportWidth = maxWidth
                     val viewportHeight = maxHeight
                     Box(Modifier.fillMaxSize().verticalScroll(vertical).horizontalScroll(horizontal), contentAlignment = Alignment.Center) {
                         Box(Modifier.width(maxOf(viewportWidth, imageWidth)).height(maxOf(viewportHeight, imageHeight)), contentAlignment = Alignment.Center) {
-                        Box(Modifier.width(imageWidth).height(imageHeight)) {
+                        Box(Modifier.width(imageWidth).height(imageHeight).clipToBounds()) {
                             Image(pageImage.image, "第 $page 页 PDF 原图", Modifier.fillMaxSize())
                             if (record != null && record.page == page && record.width > 0 && record.height > 0) Canvas(Modifier.fillMaxSize()) {
                                 // Engine boxes already include CropBox translation and PDF /Rotate.
@@ -173,8 +176,8 @@ internal fun DesktopPdfPreview(document: ImportedDocument?, record: LabelRecord?
                                 val sy = size.height / pageImage.height
                                 val topLeft = Offset(record.x * sx, record.y * sy)
                                 val boxSize = Size(record.width * sx, record.height * sy)
-                                drawRect(primary.copy(alpha = .20f), topLeft, boxSize)
-                                drawRect(primary, topLeft, boxSize, style = Stroke(2.dp.toPx()))
+                                drawRect(sourceHighlight.copy(alpha = .20f), topLeft, boxSize)
+                                drawRect(sourceHighlight, topLeft, boxSize, style = Stroke(2.dp.toPx()))
                             }
                         }
                         }

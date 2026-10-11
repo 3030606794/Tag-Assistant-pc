@@ -91,7 +91,7 @@ internal fun DesktopResultsTable(result: ExtractionResult?, canUndo: Boolean, ac
             event.isCtrlPressed && event.key == Key.C -> { copy(); true }
             event.isCtrlPressed && event.key == Key.Z && canUndo -> { actions.undo(); true }
             event.key == Key.Delete && deletable.isNotEmpty() -> { deleteOpen = true; true }
-            event.key == Key.F2 && selected.size == 1 -> { editing = selected.first(); true }
+            event.key == Key.F2 && selected.size == 1 && deletable.isNotEmpty() -> { editing = selected.first(); true }
             event.key == Key.DirectionDown || event.key == Key.DirectionUp -> {
                 if (visible.isNotEmpty()) {
                     val current = visible.indexOfFirst { it.id == focusedRow }
@@ -181,9 +181,19 @@ internal fun DesktopResultsTable(result: ExtractionResult?, canUndo: Boolean, ac
         Text("各类型按原始顺序独立排列 · 双击/F2 编辑 · Ctrl/Shift 多选", Modifier.padding(horizontal = 12.dp, vertical = 8.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
     result.records.find { it.id == editing }?.takeIf { it.kind == RecordKind.LABEL && it.column != LabelColumn.QUANTITY }?.let { record ->
-        DesktopLabelEditor(record, onSave = { actions.editRecord(record.id, it); editing = null }, onDismiss = { editing = null })
+        DesktopLabelEditor(record, onSave = { text ->
+            runCatching { LabelEdits.change(result, record.id, text) }.fold(
+                onSuccess = { actions.editRecord(record.id, text); editing = null; null },
+                onFailure = { it.message ?: "此标签无法保存，请检查内容。" },
+            )
+        }, onDismiss = { editing = null })
     }
-    if (addOpen) DesktopAddLabel(result, onSave = { type, layout, text -> actions.addRecord(type, layout, text); addOpen = false }, onDismiss = { addOpen = false })
+    if (addOpen) DesktopAddLabel(result, onSave = { type, layout, text ->
+        runCatching { LabelEdits.add(result, type, layout, text) }.fold(
+            onSuccess = { actions.addRecord(type, layout, text); addOpen = false; null },
+            onFailure = { it.message ?: "此标签无法添加，请检查内容。" },
+        )
+    }, onDismiss = { addOpen = false })
     if (deleteOpen) AlertDialog(onDismissRequest = { deleteOpen = false }, shape = RoundedCornerShape(12.dp), title = { Text("删除 ${deletable.size} 条标签？") },
         text = { Text("只删除选中的可编辑标签，原始 PDF 不变，数量说明自动重新计算。可在本次会话中撤销。") },
         confirmButton = { TextButton(onClick = { actions.deleteRecords(deletable); selected = emptySet(); deleteOpen = false }) { Text("删除", color = MaterialTheme.colorScheme.error) } },
@@ -197,29 +207,32 @@ private fun TableCell(text: String, modifier: Modifier, heading: Boolean = false
 }
 
 @Composable
-private fun DesktopLabelEditor(record: LabelRecord, onSave: (String) -> Unit, onDismiss: () -> Unit) {
+private fun DesktopLabelEditor(record: LabelRecord, onSave: (String) -> String?, onDismiss: () -> Unit) {
     var text by remember(record.id) { mutableStateOf(TextFieldValue(record.text)) }
+    var error by remember(record.id) { mutableStateOf<String?>(null) }
     val valid = text.text.isNotBlank() && text.text.length <= 500 && text.text.none { it == '\n' || it == '\r' }
+    fun save() { error = onSave(text.text.trim()) }
     AlertDialog(onDismissRequest = onDismiss, shape = RoundedCornerShape(12.dp), title = { Text("编辑 ${record.column.title}") },
         text = { Column(Modifier.widthIn(min = 400.dp, max = 600.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(record.layout, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            OutlinedTextField(text, { text = it }, singleLine = true, isError = !valid, label = { Text("标签内容") },
-                supportingText = { Text("不能为空，最多 500 字，不含换行。") }, modifier = Modifier.fillMaxWidth().onPreviewKeyEvent { event ->
-                    if (event.type == KeyEventType.KeyDown && event.isCtrlPressed && event.key == Key.Enter && text.composition == null && valid) { onSave(text.text.trim()); true } else false
+            OutlinedTextField(text, { text = it; error = null }, singleLine = true, isError = !valid || error != null, label = { Text("标签内容") },
+                supportingText = { Text(error ?: "不能为空，最多 500 字，不含换行。") }, modifier = Modifier.fillMaxWidth().onPreviewKeyEvent { event ->
+                    if (event.type == KeyEventType.KeyDown && event.isCtrlPressed && event.key == Key.Enter && text.composition == null && valid) { save(); true } else false
                 }, shape = RoundedCornerShape(8.dp))
             if (record.edited) Text("原始内容：${record.sourceText}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        } }, confirmButton = { Button(onClick = { onSave(text.text.trim()) }, enabled = valid && text.composition == null, shape = RoundedCornerShape(10.dp)) { Text("保存 · Ctrl+Enter") } },
+        } }, confirmButton = { Button(onClick = ::save, enabled = valid && text.composition == null, shape = RoundedCornerShape(10.dp)) { Text("保存 · Ctrl+Enter") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } })
 }
 
 @Composable
-private fun DesktopAddLabel(result: ExtractionResult, onSave: (LabelColumn, String, String) -> Unit, onDismiss: () -> Unit) {
+private fun DesktopAddLabel(result: ExtractionResult, onSave: (LabelColumn, String, String) -> String?, onDismiss: () -> Unit) {
     val columns = result.mode.columns.filter { it != LabelColumn.QUANTITY }
     val layouts = result.records.map { it.layout }.filter(String::isNotBlank).distinct()
     if (columns.isEmpty()) return
     var type by remember { mutableStateOf(columns.first()) }
     var layout by remember { mutableStateOf(layouts.firstOrNull().orEmpty()) }
     var text by remember { mutableStateOf(TextFieldValue("")) }
+    var error by remember { mutableStateOf<String?>(null) }
     var typeOpen by remember { mutableStateOf(false) }
     var layoutOpen by remember { mutableStateOf(false) }
     val valid = text.text.isNotBlank() && text.text.length <= 500 && text.text.none { it == '\n' || it == '\r' } && layout.isNotBlank()
@@ -227,12 +240,12 @@ private fun DesktopAddLabel(result: ExtractionResult, onSave: (LabelColumn, Stri
         text = { Column(Modifier.widthIn(min = 400.dp, max = 600.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box { OutlinedButton(onClick = { typeOpen = true }, shape = RoundedCornerShape(8.dp)) { Text("${type.letter} ${type.title}") }
-                    DropdownMenu(typeOpen, { typeOpen = false }) { columns.forEach { value -> DropdownMenuItem(text = { Text(value.title) }, onClick = { type = value; typeOpen = false }) } } }
+                    DropdownMenu(typeOpen, { typeOpen = false }) { columns.forEach { value -> DropdownMenuItem(text = { Text(value.title) }, onClick = { type = value; typeOpen = false; error = null }) } } }
                 Box { OutlinedButton(onClick = { layoutOpen = true }, enabled = layouts.isNotEmpty(), shape = RoundedCornerShape(8.dp)) { Text(layout.ifBlank { "无可选柜体" }) }
-                    DropdownMenu(layoutOpen, { layoutOpen = false }) { layouts.forEach { value -> DropdownMenuItem(text = { Text(value) }, onClick = { layout = value; layoutOpen = false }) } } }
+                    DropdownMenu(layoutOpen, { layoutOpen = false }) { layouts.forEach { value -> DropdownMenuItem(text = { Text(value) }, onClick = { layout = value; layoutOpen = false; error = null }) } } }
             }
-            OutlinedTextField(text, { text = it }, singleLine = true, label = { Text("标签内容") }, supportingText = { Text("最多 500 字，不含换行。保存后参与导出和计数。") },
+            OutlinedTextField(text, { text = it; error = null }, singleLine = true, isError = error != null, label = { Text("标签内容") }, supportingText = { Text(error ?: "最多 500 字，不含换行。保存后参与导出和计数。") },
                 modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(8.dp))
-        } }, confirmButton = { Button(onClick = { onSave(type, layout, text.text.trim()) }, enabled = valid && text.composition == null, shape = RoundedCornerShape(10.dp)) { Text("添加") } },
+        } }, confirmButton = { Button(onClick = { error = onSave(type, layout, text.text.trim()) }, enabled = valid && text.composition == null, shape = RoundedCornerShape(10.dp)) { Text("添加") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } })
 }

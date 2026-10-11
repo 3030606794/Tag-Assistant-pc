@@ -80,12 +80,18 @@ fun main(args: Array<String>) {
             }
             val finish: () -> Unit = {
                 if (!closing) {
+                    val waitingForTask = controller.state.value.progress.running
                     closing = true
                     controller.cancel()
                     scope.launch {
                         controller.awaitIdle()
-                        controller.close()
-                        exitApplication()
+                        if (waitingForTask && controller.state.value.lastTaskFailed) {
+                            closing = false
+                            closeDialog = false
+                        } else {
+                            controller.close()
+                            exitApplication()
+                        }
                     }
                 }
             }

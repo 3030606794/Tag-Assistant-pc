@@ -281,7 +281,8 @@ class DesktopStore(val root: Path) {
             // Never downgrade to a non-atomic overwrite: unsupported destinations fail and retain old data.
             Files.move(temporary, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
         } finally {
-            Files.deleteIfExists(temporary)
+            // A cleanup error after the atomic move must not turn a committed save into failure.
+            runCatching { Files.deleteIfExists(temporary) }
         }
     }
 
