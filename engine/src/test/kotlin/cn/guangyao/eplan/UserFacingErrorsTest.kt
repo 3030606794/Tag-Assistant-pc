@@ -1,8 +1,13 @@
 package cn.guangyao.eplan
 
+import org.apache.pdfbox.pdmodel.PDDocument
+import org.apache.pdfbox.pdmodel.PDPage
+import org.apache.pdfbox.pdmodel.encryption.AccessPermission
 import org.apache.pdfbox.pdmodel.encryption.InvalidPasswordException
+import org.apache.pdfbox.pdmodel.encryption.StandardProtectionPolicy
 import org.junit.Assert.*
 import org.junit.Test
+import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.nio.file.AccessDeniedException
 
@@ -16,7 +21,18 @@ class UserFacingErrorsTest {
     }
 
     @Test fun encryptedPdfFailureExplainsThePasswordProblem() {
-        val visible = UserFacingErrors.describe(InvalidPasswordException("Cannot decrypt PDF, the password is incorrect"))
+        val bytes = ByteArrayOutputStream().use { output ->
+            PDDocument().use { pdf ->
+                pdf.addPage(PDPage())
+                pdf.protect(StandardProtectionPolicy("owner-password", "view-password", AccessPermission()).apply {
+                    encryptionKeyLength = 128
+                })
+                pdf.save(output)
+            }
+            output.toByteArray()
+        }
+        val error = assertThrows(InvalidPasswordException::class.java) { PDDocument.load(bytes).close() }
+        val visible = UserFacingErrors.describe(error)
         assertTrue(visible.contains("密码") || visible.contains("加密"))
         assertFalse(visible.contains("Cannot decrypt PDF"))
     }
