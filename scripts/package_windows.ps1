@@ -56,6 +56,13 @@ $common = @(
     '--win-menu', '--win-menu-group', 'EPLAN 标签助手',
     '--win-shortcut', '--win-dir-chooser', '--verbose'
 )
+
+function ConvertTo-JpackageArgument([string]$Value) {
+    # JDK 17 CommandLine.Tokenizer treats backslashes as escapes inside quotes.
+    # An argument file also avoids its Windows native launcher's ANSI argv path.
+    return '"' + $Value.Replace('\', '\\').Replace('"', '\"') + '"'
+}
+
 $oldJavaToolOptions = $env:JAVA_TOOL_OPTIONS
 try {
     # jpackage selects WiXUI localization from the JVM default locale. This is
@@ -64,8 +71,17 @@ try {
     foreach ($format in @('msi', 'exe')) {
         $destination = Join-Path $root "desktop/build/compose/binaries/main/$format"
         New-Item -ItemType Directory -Force -Path $destination | Out-Null
-        & $jpackage @common --type $format --dest $destination
-        if ($LASTEXITCODE -ne 0) { throw "Chinese $format packaging failed with exit code $LASTEXITCODE." }
+        $arguments = @($common) + @('--type', $format, '--dest', $destination)
+        $argumentFileName = "jpackage-$format.args"
+        $argumentFile = Join-Path $generated $argumentFileName
+        $lines = $arguments | ForEach-Object { ConvertTo-JpackageArgument $_ }
+        [System.IO.File]::WriteAllLines($argumentFile, [string[]]$lines, [System.Text.UTF8Encoding]::new($false))
+        Push-Location -LiteralPath $generated
+        try {
+            # The only native argv token is ASCII; all Chinese stays in UTF-8.
+            & $jpackage "@$argumentFileName"
+            if ($LASTEXITCODE -ne 0) { throw "Chinese $format packaging failed with exit code $LASTEXITCODE." }
+        } finally { Pop-Location }
     }
 } finally {
     if ($null -eq $oldJavaToolOptions) { Remove-Item Env:JAVA_TOOL_OPTIONS -ErrorAction SilentlyContinue }

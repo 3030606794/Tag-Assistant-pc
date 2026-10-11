@@ -3,6 +3,7 @@
 打包仅在本仓库 Windows GitHub Actions 执行。Compose 先生成应用镜像，再由同一 JDK 17 的官方 `jpackage` 使用该镜像生成 MSI 和 EXE，完整保留离线运行环境。没有修改已经生成的安装器二进制。
 
 - JVM 默认地区只在打包进程中设为 `zh-CN`，使 WiXUI 使用简体中文资源，不改变用户系统地区。
+- jpackage 参数全部写入 UTF-8 无 BOM 的参数文件，原生命令行仅传 ASCII 文件名；同时指定工具进程 `file.encoding=UTF-8`，避免 JDK 17 在英文 Windows 上把中文参数降级为问号。
 - `overrides.wxi` 设置 MSI `ProductLanguage=2052`，同时检查 Summary Template 为 `x64;2052`。
 - `InstallDirNotEmptyDlg.wxs` 保留 jpackage 的目录确认动作及对话框序列，只补全 JDK 17 默认资源未翻译的安装器标题。
 - 不启用 JDK 默认仍含英文的可选快捷方式选择弹窗；桌面和开始菜单快捷方式直接生成中文名称。
