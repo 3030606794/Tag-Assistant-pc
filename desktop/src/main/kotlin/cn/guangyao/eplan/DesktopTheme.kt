@@ -9,12 +9,12 @@ import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.platform.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 // All product colors are defined here; screens use MaterialTheme.colorScheme roles.
 private val LightPurple = lightColorScheme(
@@ -59,14 +59,47 @@ private val DarkPurple = darkColorScheme(
     errorContainer = Color(0xFF8C1D18), onErrorContainer = Color(0xFFF9DEDC),
 )
 
-private val Roboto = FontFamily(
-    Font("fonts/roboto_regular.ttf", FontWeight.Normal),
-    Font("fonts/roboto_medium.ttf", FontWeight.Medium),
-    Font("fonts/roboto_bold.ttf", FontWeight.Bold),
+private val DesktopSans = FontFamily(
+    Font("fonts/noto_sans_sc_regular.ttf", FontWeight.Normal),
+    Font("fonts/noto_sans_sc_medium.ttf", FontWeight.Medium),
+    Font("fonts/noto_sans_sc_bold.ttf", FontWeight.Bold),
 )
 
-// The font-family constructor preserves all standard Material 3 type sizes and weights.
-private val PocketTypography = Typography(fontFamily = Roboto)
+// Embed a full Chinese sans-serif family instead of relying on Windows' CJK fallback.
+// Scale type sizes and line heights directly, so text is rasterized at the final DPI.
+private val BaseTypography = Typography(fontFamily = DesktopSans)
+private val PocketTypography = BaseTypography.copy(
+    displayLarge = BaseTypography.displayLarge.copy(fontSize = 61.sp, lineHeight = 68.sp),
+    displayMedium = BaseTypography.displayMedium.copy(fontSize = 49.sp, lineHeight = 56.sp),
+    displaySmall = BaseTypography.displaySmall.copy(fontSize = 40.sp, lineHeight = 48.sp),
+    headlineLarge = BaseTypography.headlineLarge.copy(fontSize = 36.sp, lineHeight = 44.sp),
+    headlineMedium = BaseTypography.headlineMedium.copy(fontSize = 32.sp, lineHeight = 40.sp),
+    headlineSmall = BaseTypography.headlineSmall.copy(fontSize = 28.sp, lineHeight = 36.sp),
+    titleLarge = BaseTypography.titleLarge.copy(fontSize = 24.sp, lineHeight = 32.sp),
+    titleMedium = BaseTypography.titleMedium.copy(fontSize = 18.sp, lineHeight = 28.sp),
+    titleSmall = BaseTypography.titleSmall.copy(fontSize = 16.sp, lineHeight = 24.sp),
+    bodyLarge = BaseTypography.bodyLarge.copy(fontSize = 18.sp, lineHeight = 28.sp),
+    bodyMedium = BaseTypography.bodyMedium.copy(fontSize = 16.sp, lineHeight = 26.sp),
+    bodySmall = BaseTypography.bodySmall.copy(fontSize = 14.sp, lineHeight = 22.sp),
+    labelLarge = BaseTypography.labelLarge.copy(fontSize = 16.sp, lineHeight = 24.sp),
+    labelMedium = BaseTypography.labelMedium.copy(fontSize = 14.sp, lineHeight = 22.sp),
+    labelSmall = BaseTypography.labelSmall.copy(fontSize = 13.sp, lineHeight = 20.sp),
+    displayLargeEmphasized = BaseTypography.displayLargeEmphasized.copy(fontSize = 61.sp, lineHeight = 68.sp),
+    displayMediumEmphasized = BaseTypography.displayMediumEmphasized.copy(fontSize = 49.sp, lineHeight = 56.sp),
+    displaySmallEmphasized = BaseTypography.displaySmallEmphasized.copy(fontSize = 40.sp, lineHeight = 48.sp),
+    headlineLargeEmphasized = BaseTypography.headlineLargeEmphasized.copy(fontSize = 36.sp, lineHeight = 44.sp),
+    headlineMediumEmphasized = BaseTypography.headlineMediumEmphasized.copy(fontSize = 32.sp, lineHeight = 40.sp),
+    headlineSmallEmphasized = BaseTypography.headlineSmallEmphasized.copy(fontSize = 28.sp, lineHeight = 36.sp),
+    titleLargeEmphasized = BaseTypography.titleLargeEmphasized.copy(fontSize = 24.sp, lineHeight = 32.sp),
+    titleMediumEmphasized = BaseTypography.titleMediumEmphasized.copy(fontSize = 18.sp, lineHeight = 28.sp),
+    titleSmallEmphasized = BaseTypography.titleSmallEmphasized.copy(fontSize = 16.sp, lineHeight = 24.sp),
+    bodyLargeEmphasized = BaseTypography.bodyLargeEmphasized.copy(fontSize = 18.sp, lineHeight = 28.sp),
+    bodyMediumEmphasized = BaseTypography.bodyMediumEmphasized.copy(fontSize = 16.sp, lineHeight = 26.sp),
+    bodySmallEmphasized = BaseTypography.bodySmallEmphasized.copy(fontSize = 14.sp, lineHeight = 22.sp),
+    labelLargeEmphasized = BaseTypography.labelLargeEmphasized.copy(fontSize = 16.sp, lineHeight = 24.sp),
+    labelMediumEmphasized = BaseTypography.labelMediumEmphasized.copy(fontSize = 14.sp, lineHeight = 22.sp),
+    labelSmallEmphasized = BaseTypography.labelSmallEmphasized.copy(fontSize = 13.sp, lineHeight = 20.sp),
+)
 private val PocketShapes = Shapes(
     extraSmall = RoundedCornerShape(8.dp),
     small = RoundedCornerShape(8.dp),

@@ -23,9 +23,6 @@ import kotlinx.coroutines.delay
 import java.awt.Toolkit
 import java.awt.datatransfer.StringSelection
 import java.io.File
-import javax.swing.JFileChooser
-import javax.swing.SwingUtilities
-import javax.swing.filechooser.FileNameExtensionFilter
 
 /** Platform actions are outside the content so the same production UI can be rendered in CI. */
 internal data class DesktopActions(
@@ -63,9 +60,14 @@ fun DesktopApp(controller: DesktopController) {
     var localMessage by remember { mutableStateOf<String?>(null) }
     var localFailure by remember { mutableStateOf(false) }
     LaunchedEffect(state.message) { if (state.message != null) localMessage = null }
+    fun dialogFailure(message: String) {
+        controller.clearMessage()
+        localFailure = true
+        localMessage = message
+    }
     val actions = remember(controller) {
         DesktopActions(
-            importPdf = { chooseDesktopFiles(false) { controller.importFiles(it) } },
+            importPdf = { DesktopFileDialogs.choosePdfFiles(controller::importFiles, ::dialogFailure) },
             selectDocument = controller::selectDocument, selectResult = controller::selectResult,
             extract = { controller.extract(it) }, cancel = controller::cancel, saveRules = controller::saveRules,
             editRecord = controller::editRecord, addRecord = controller::addRecord, deleteRecords = controller::deleteRecords,
@@ -73,7 +75,10 @@ fun DesktopApp(controller: DesktopController) {
             deleteDocument = controller::deleteDocument, deleteResult = controller::deleteResult, clearDocuments = controller::clearDocuments,
             favoriteExport = controller::favoriteExport, deleteExport = controller::deleteExport, renameExport = controller::renameExport,
             refreshExports = controller::refreshExports,
-            chooseExportDirectory = { chooseDesktopFiles(true) { files -> files.firstOrNull()?.let { controller.setExportDirectory(it.absolutePath) } } },
+            chooseExportDirectory = {
+                DesktopFileDialogs.chooseExportDirectory(File(controller.state.value.exportDirectory),
+                    { controller.setExportDirectory(it.absolutePath) }, ::dialogFailure)
+            },
             setTheme = controller::setTheme,
             clearMessage = { localMessage = null; controller.clearMessage() },
             openFile = controller::openFile, openDataFolder = controller::openDataFolder, openExportFolder = controller::openExportFolder,
@@ -85,23 +90,6 @@ fun DesktopApp(controller: DesktopController) {
         )
     }
     DesktopContent(if (state.message == null && localMessage != null) state.copy(message = localMessage, lastTaskFailed = localFailure) else state, actions)
-}
-
-private fun chooseDesktopFiles(directory: Boolean, selected: (List<File>) -> Unit) {
-    SwingUtilities.invokeLater {
-        val chooser = JFileChooser().apply {
-            dialogTitle = if (directory) "选择 Excel 导出目录" else "导入电气图纸 PDF"
-            approveButtonText = if (directory) "选择文件夹" else "导入"
-            approveButtonToolTipText = if (directory) "将所选文件夹设为 Excel 导出目录" else "导入所选 PDF 图纸，保留原始文件"
-            fileSelectionMode = if (directory) JFileChooser.DIRECTORIES_ONLY else JFileChooser.FILES_ONLY
-            isMultiSelectionEnabled = !directory
-            if (!directory) { fileFilter = FileNameExtensionFilter("PDF 图纸 (*.pdf)", "pdf"); isAcceptAllFileFilterUsed = false }
-        }
-        if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
-            val files = if (directory) listOf(chooser.selectedFile) else chooser.selectedFiles.toList().ifEmpty { listOf(chooser.selectedFile) }
-            selected(files.filterNotNull())
-        }
-    }
 }
 
 private enum class DesktopPage(val title: String, val icon: String) {
@@ -137,7 +125,7 @@ internal fun DesktopContent(state: DesktopState, actions: DesktopActions, initia
             Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainerLow).padding(horizontal = 16.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Symbol("label", modifier = Modifier.size(26.dp), tint = MaterialTheme.colorScheme.primary)
-                Column(Modifier.width(202.dp)) {
+                Column(Modifier.width(222.dp)) {
                     Text("EPLAN 标签助手", style = MaterialTheme.typography.titleMedium)
                     Text("离线桌面工作台", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -157,7 +145,7 @@ internal fun DesktopContent(state: DesktopState, actions: DesktopActions, initia
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             when (page) {
                 DesktopPage.WORKSPACE -> Row(Modifier.weight(1f).fillMaxWidth()) {
-                    DocumentSidebar(state, actions, Modifier.width(232.dp).fillMaxHeight()) { message, action -> confirmDelete = message to action }
+                    DocumentSidebar(state, actions, Modifier.width(252.dp).fillMaxHeight()) { message, action -> confirmDelete = message to action }
                     VerticalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     Column(Modifier.weight(1f).fillMaxHeight()) {
                         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically,
@@ -181,7 +169,7 @@ internal fun DesktopContent(state: DesktopState, actions: DesktopActions, initia
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
                             val availableWidth = maxWidth
-                            val showPdf = previewOpen && availableWidth >= 760.dp
+                            val showPdf = previewOpen && availableWidth >= 1_000.dp
                             Row(Modifier.fillMaxSize()) {
                                 DesktopResultsTable(result, state.canUndo, actions,
                                     onSource = { sourceRecordId = it.id; issueSource = it.takeIf { item -> item.id.startsWith("issue_") }; previewOpen = true }, modifier = Modifier.weight(1f).fillMaxHeight())
@@ -252,7 +240,7 @@ private fun DocumentSidebar(state: DesktopState, actions: DesktopActions, modifi
                     Row(Modifier.fillMaxWidth().clickable { actions.selectDocument(document.id) }.padding(start = 10.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Symbol("description", modifier = Modifier.size(18.dp)); Spacer(Modifier.width(8.dp))
                         Column(Modifier.weight(1f)) {
-                            Text(document.name, style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            Text(document.name, style = MaterialTheme.typography.bodyLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
                             Text(if (document.pageCount > 0) "${document.pageCount} 页" else "已导入", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         IconButton(onClick = { confirm("删除 ${document.name} 的应用副本、结果与缓存。原始 PDF 和已导出 Excel 保留。") { actions.deleteDocument(document.id) } },
@@ -270,7 +258,7 @@ private fun DocumentSidebar(state: DesktopState, actions: DesktopActions, modifi
                 Surface(shape = RoundedCornerShape(8.dp), color = if (result.id == state.selectedResultId) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerLow) {
                     Row(Modifier.fillMaxWidth().clickable { actions.selectResult(result.id) }.padding(start = 10.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            Text(result.mode.title + if (!result.completed) " · 未完成" else "", style = MaterialTheme.typography.bodyMedium)
+                            Text(result.mode.title + if (!result.completed) " · 未完成" else "", style = MaterialTheme.typography.bodyLarge)
                             Text(desktopDate(result.createdAt), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         IconButton(onClick = { confirm("删除这份${result.mode.title}结果，PDF 与导出文件保留。") { actions.deleteResult(result.id) } }, modifier = Modifier.size(28.dp)) { Symbol("delete", "删除结果", modifier = Modifier.size(16.dp)) }

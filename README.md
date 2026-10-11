@@ -1,11 +1,11 @@
-# EPLAN 标签助手 PC · 0.1.1 中文版
+# EPLAN 标签助手 PC · 0.1.2 中文版
 
-Windows 10/11 x64 的离线桌面工具。读取 EPLAN 导出的带文字 PDF，提取号码标签，查看来源、编辑结果并直接生成 Excel。Purple 浅深色、跟随系统、Roboto 和 Material Symbols Rounded 延续手机版设计；桌面采用图纸、结果表格、PDF 来源三栏工作台。
+Windows 10/11 x64 的离线桌面工具。读取 EPLAN 导出的带文字 PDF，提取号码标签，查看来源、编辑结果并直接生成 Excel。Purple 浅深色、跟随系统和 Material Symbols Rounded 延续手机版设计；内置 Noto Sans SC 中文无衬线字体，正文与表格字号放大；桌面采用图纸、结果表格、PDF 来源三栏工作台。
 
 ## 使用
 
-1. 安装 EXE/MSI，或完整解压便携包后运行 `EPLAN标签助手.exe`。安装包包含 Java 与 Python 运行环境；使用时无需联网、无需安装 Python/Java/Office。安装向导、桌面快捷方式、文件选择框、文本右键菜单及操作提示使用简体中文。
-2. 点击“导入 PDF”或把 PDF 文件拖入窗口。程序保存自己的副本，原始文件不改动。
+1. 安装 EXE/MSI，或完整解压便携包后运行 `EPLAN标签助手.exe`。安装包包含 Java 与 Python 运行环境；使用时无需联网、无需安装 Python/Java/Office。安装向导、桌面快捷方式、文本右键菜单及操作提示使用简体中文。Windows 10/11 使用原生系统文件、文件夹选择器。
+2. 点击“导入 PDF”选择多个文件，或从资源管理器把一个或多个 PDF 拖入主窗口。拖入时显示提示，松开后自动导入；处理中的任务会暂时拒绝新拖入。程序保存自己的副本，原始文件不改动。
 3. 选择完整提取或 A–F 六个单项之一并开始。各模式规则独立保存。提取完成自动保存，取消时保留已处理的部分结果。
 4. 结果支持搜索、分类、选择、复制、修改、补充、批量删除和撤销。点标签可在右侧 PDF 查看原文位置。A–F 是各自连续的打印列表，不强制逐行配对。
 5. 点击“导出 Excel”直接生成 XLSX，不增加核对门槛。同名文件自动另存，不覆盖现有文件。可在文件页打开、收藏、改显示名称和真正删除本地文件。
@@ -31,10 +31,10 @@ Windows 10/11 x64 的离线桌面工具。读取 EPLAN 导出的带文字 PDF，
 
 工作流 `Windows offline preview` 在 Windows runner 执行业务回归、桌面存储测试、Python 工具测试、实际 Compose 浅深色渲染、EXE/MSI/便携包生成，以及打包后可执行程序的导入/提取/编辑/撤销/导出/重启/删除/Python 离线检查。
 
-交付物在成功工作流的 `EplanTagAssistantPC-v0.1.1-Windows-x64` artifact 中，验证报告和预览在 `PC-v0.1.1-cloud-evidence` 中。具体已通过的构建与检查以 [BUILD-RESULT](BUILD-RESULT.md) 为准。安装器通过官方 jpackage 的中文资源构建，并检查独立 MSI 与 EXE 内嵌 MSI 的实际中文语言和文字；保留初版的数据目录、安装目录及升级标识。EPLAN/PDF/Excel、设备编号、输入语法和用户原始文件名不是待翻译的界面内容。
+交付物在成功工作流的 `EplanTagAssistantPC-v0.1.2-Windows-x64` artifact 中，验证报告和预览在 `PC-v0.1.2-cloud-evidence` 中。具体已通过的构建与检查以 [BUILD-RESULT](BUILD-RESULT.md) 为准。安装器通过官方 jpackage 的中文资源构建，并检查独立 MSI 与 EXE 内嵌 MSI 的实际中文语言和文字；保留初版的数据目录、安装目录及升级标识。EPLAN/PDF/Excel、设备编号、输入语法和用户原始文件名不是待翻译的界面内容。
 
 ## 技术与许可
 
 Kotlin 2.2.20、Compose Desktop 1.12.1、Material3 1.12.0-alpha03、Apache PDFBox 2.0.37、JDK 17、Gradle 9.3.1。离线工具仅使用标准库，随包附带固定摘要校验的 CPython 3.13.9 Windows x64 嵌入运行时。
 
-项目沿用原仓库 MIT 许可；Roboto、Material Symbols、CPython 和依赖库保留各自许可。原标签 SVG 作为白底黑色应用图标，不随界面主题变化。
+项目沿用原仓库 MIT 许可；Roboto、Material Symbols、CPython 和依赖库保留各自许可。原标签 SVG 作为白底黑色连续圆角应用图标，外角透明，不随界面主题变化。Noto Sans SC 随包保留 SIL OFL 1.1 许可，字体仅在云端准备时下载并核对固定来源及摘要，正式运行离线。

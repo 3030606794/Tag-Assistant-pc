@@ -18,10 +18,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.awt.Dimension
-import java.awt.datatransfer.DataFlavor
-import java.awt.dnd.DnDConstants
-import java.awt.dnd.DropTarget
-import java.awt.dnd.DropTargetDropEvent
 import java.io.File
 import java.nio.channels.FileChannel
 import java.nio.file.Files
@@ -98,33 +94,31 @@ fun main(args: Array<String>) {
             }
             Window(
                 onCloseRequest = { if (state.progress.running) closeDialog = true else finish() },
-                title = "EPLAN 标签助手 · 电脑版 0.1.1",
-                state = rememberWindowState(width = 1360.dp, height = 860.dp,
+                title = "EPLAN 标签助手 · 电脑版 0.1.2",
+                state = rememberWindowState(width = 1440.dp, height = 900.dp,
                     position = WindowPosition(Alignment.Center)),
                 icon = painterResource("branding/app.png"),
             ) {
                 DisposableEffect(window) {
                     window.minimumSize = Dimension(1040, 680)
-                    val previous = window.dropTarget
-                    window.dropTarget = object : DropTarget() {
-                        override fun drop(event: DropTargetDropEvent) {
-                            try {
-                                val current = controller.state.value
-                                if (!event.isDataFlavorSupported(DataFlavor.javaFileListFlavor) || current.progress.running || !current.loaded || closing) {
-                                    event.rejectDrop(); return
-                                }
-                                event.acceptDrop(DnDConstants.ACTION_COPY)
-                                val files = (event.transferable.getTransferData(DataFlavor.javaFileListFlavor) as? List<*>)
-                                    ?.filterIsInstance<File>().orEmpty()
-                                controller.importFiles(files)
-                                event.dropComplete(true)
-                            } catch (_: Exception) { event.dropComplete(false) }
-                        }
-                    }
-                    onDispose { window.dropTarget = previous }
+                    onDispose { }
                 }
                 DesktopTheme(dark) {
-                    DesktopApp(controller)
+                    DesktopFileDrop(
+                        canImport = {
+                            val current = controller.state.value
+                            current.loaded && !current.progress.running && !closing && !closeDialog
+                        },
+                        unavailableReason = {
+                            val current = controller.state.value
+                            when {
+                                closing || closeDialog -> "正在关闭或确认关闭，请稍后再拖入图纸。"
+                                !current.loaded -> "正在读取本机工作区，请稍后再拖入图纸。"
+                                else -> "当前任务尚未完成，请等待或取消后再拖入图纸。"
+                            }
+                        },
+                        onFiles = controller::importFiles,
+                    ) { DesktopApp(controller) }
                     if (closeDialog) AlertDialog(
                         onDismissRequest = { if (!closing) closeDialog = false },
                         title = { Text(if (closing) "正在保存并关闭" else "关闭工作台？") },

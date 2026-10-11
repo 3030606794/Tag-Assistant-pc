@@ -24,7 +24,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Exe, TargetFormat.Msi)
             packageName = "EPLAN标签助手"
-            packageVersion = "0.1.1"
+            packageVersion = "0.1.2"
             description = "EPLAN 标签助手 · Windows 离线版"
             vendor = "光光"
             copyright = "Copyright 2026 Eplan Pocket contributors"

@@ -51,13 +51,14 @@ jobs:
       - name: Package Windows offline application
         shell: pwsh
         run: |
+          $env:JAVA_TOOL_OPTIONS = "$env:JAVA_TOOL_OPTIONS -Dfile.encoding=UTF-8".Trim()
           .\gradlew.bat --no-daemon :desktop:createDistributable
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          ./scripts/package_windows.ps1 -Version '0.1.1' -ApplicationName 'EPLAN标签助手'
+          ./scripts/package_windows.ps1 -Version '0.1.2' -ApplicationName 'EPLAN标签助手'
       - name: Verify Chinese installer resources
         shell: pwsh
         run: |
-          python scripts/verify_windows_installer.py --version '0.1.1' --application-name 'EPLAN标签助手'
+          python scripts/verify_windows_installer.py --version '0.1.2' --application-name 'EPLAN标签助手'
           exit $LASTEXITCODE
       - name: Packaged application offline smoke test
         shell: pwsh
@@ -76,9 +77,9 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path 'delivery' | Out-Null
-          Copy-Item 'desktop/build/compose/binaries/main/exe/*.exe' 'delivery/EPLAN标签助手-v0.1.1-安装版.exe'
-          Copy-Item 'desktop/build/compose/binaries/main/msi/*.msi' 'delivery/EPLAN标签助手-v0.1.1.msi'
-          Compress-Archive -Path 'desktop/build/compose/binaries/main/app/EPLAN标签助手' -DestinationPath 'delivery/EPLAN标签助手-v0.1.1-便携版.zip'
+          Copy-Item 'desktop/build/compose/binaries/main/exe/*.exe' 'delivery/EPLAN标签助手-v0.1.2-安装版.exe'
+          Copy-Item 'desktop/build/compose/binaries/main/msi/*.msi' 'delivery/EPLAN标签助手-v0.1.2.msi'
+          Compress-Archive -Path 'desktop/build/compose/binaries/main/app/EPLAN标签助手' -DestinationPath 'delivery/EPLAN标签助手-v0.1.2-便携版.zip'
           Copy-Item 'README.md','LICENSE' 'delivery'
           $hashes = Get-ChildItem delivery -File | Where-Object { $_.Extension -in '.exe','.msi','.zip' } | ForEach-Object { (Get-FileHash -Algorithm SHA256 -LiteralPath $_.FullName).Hash.ToLower() + '  ' + $_.Name }
           $hashes | Set-Content -Path 'delivery/SHA256SUMS.txt' -Encoding utf8
@@ -87,7 +88,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: PC-v0.1.1-cloud-evidence
+          name: PC-v0.1.2-cloud-evidence
           path: |
             engine/build/reports/tests/
             engine/build/test-results/
@@ -98,6 +99,6 @@ jobs:
       - name: Upload Windows delivery
         uses: actions/upload-artifact@v4
         with:
-          name: EplanTagAssistantPC-v0.1.1-Windows-x64
+          name: EplanTagAssistantPC-v0.1.2-Windows-x64
           path: delivery/
           if-no-files-found: error

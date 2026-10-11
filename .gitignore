@@ -14,3 +14,4 @@ local.properties
 *.key
 release-evidence/
 delivery/
+desktop/src/main/resources/fonts/noto_sans_sc_*.ttf

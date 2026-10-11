@@ -83,7 +83,7 @@ internal fun DesktopFilesPage(state: DesktopState, actions: DesktopActions, modi
 internal fun DesktopSettingsPage(state: DesktopState, actions: DesktopActions, modifier: Modifier) {
     var section by remember { mutableStateOf("外观") }
     Row(modifier.fillMaxWidth()) {
-        Column(Modifier.width(200.dp).fillMaxHeight().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.width(220.dp).fillMaxHeight().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("设置", Modifier.padding(vertical = 12.dp), style = MaterialTheme.typography.titleLarge)
             listOf("外观" to "person", "关于" to "info", "离线工具" to "shield").forEach { (title, icon) ->
                 Surface(color = if (section == title) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface,

@@ -138,7 +138,7 @@ internal fun DesktopPdfPreview(document: ImportedDocument?, record: LabelRecord?
                 horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 IconButton(onClick = { page-- }, enabled = document != null && page > 1, modifier = Modifier.size(32.dp)) { Symbol("arrow_back", "上一页") }
                 OutlinedTextField(pageText, { if (it.length <= 6 && it.all(Char::isDigit)) pageText = it }, singleLine = true,
-                    modifier = Modifier.width(64.dp).onPreviewKeyEvent { event ->
+                    modifier = Modifier.width(76.dp).onPreviewKeyEvent { event ->
                         if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) { goToPage(); true } else false
                     }, textStyle = MaterialTheme.typography.bodySmall, enabled = document != null, shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
                 Text("/ ${if (count > 0) count else "—"}", style = MaterialTheme.typography.labelSmall)

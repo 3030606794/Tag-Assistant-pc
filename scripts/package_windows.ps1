@@ -10,6 +10,8 @@ if (-not $IsWindows) { throw 'Windows installers must be packaged on the Windows
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $image = Join-Path $root "desktop/build/compose/binaries/main/app/$ApplicationName"
 if (-not (Test-Path -LiteralPath (Join-Path $image "$ApplicationName.exe"))) {
+    Get-ChildItem -LiteralPath (Join-Path $root 'desktop/build/compose/binaries/main/app') -Force |
+        Select-Object Name, FullName | Format-Table -AutoSize | Out-Host
     throw "The Chinese application launcher is missing from the distributable: $image"
 }
 $jpackage = Join-Path $env:JAVA_HOME 'bin/jpackage.exe'
@@ -58,7 +60,7 @@ $oldJavaToolOptions = $env:JAVA_TOOL_OPTIONS
 try {
     # jpackage selects WiXUI localization from the JVM default locale. This is
     # scoped to packaging, so the user's Windows or application locale is untouched.
-    $env:JAVA_TOOL_OPTIONS = "$oldJavaToolOptions -Duser.language=zh -Duser.country=CN".Trim()
+    $env:JAVA_TOOL_OPTIONS = "$oldJavaToolOptions -Dfile.encoding=UTF-8 -Duser.language=zh -Duser.country=CN".Trim()
     foreach ($format in @('msi', 'exe')) {
         $destination = Join-Path $root "desktop/build/compose/binaries/main/$format"
         New-Item -ItemType Directory -Force -Path $destination | Out-Null

@@ -3,7 +3,11 @@
 package cn.guangyao.eplan
 
 import androidx.compose.ui.ImageComposeScene
+import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.platform.LocalLocalization
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.use
 import com.google.gson.GsonBuilder
 import kotlinx.coroutines.runBlocking
@@ -14,6 +18,7 @@ import java.nio.file.Files
 import java.util.UUID
 import java.util.zip.ZipFile
 import javax.swing.SwingUtilities
+import kotlin.math.roundToInt
 
 /** CI-only paths are explicit. Normal launches never create examples or test documents. */
 internal fun renderCloudPreviews(output: File) {
@@ -37,19 +42,27 @@ internal fun renderCloudPreviews(output: File) {
             Triple("workspace", ready, "workspace"),
             Triple("files", ready, "files"),
             Triple("settings", ready, "settings"),
+            Triple("drop", ready, "workspace"),
         )
-        for ((name, state, page) in states) for (dark in listOf(false, true)) {
-            val target = File(output, "$name-${if (dark) "dark" else "light"}.png")
+        for ((name, state, page) in states) for (dark in listOf(false, true))
+            for (scale in if (name == "workspace") listOf(1f, if (dark) 1.5f else 1.25f) else listOf(1f)) {
+            val scaleSuffix = if (scale == 1f) "" else "-${(scale * 100).roundToInt()}pct"
+            val target = File(output, "$name-${if (dark) "dark" else "light"}$scaleSuffix.png")
             lateinit var scene: ImageComposeScene
             var menuLabels: List<String> = emptyList()
             SwingUtilities.invokeAndWait {
-                scene = ImageComposeScene(1440, 900) {
+                scene = ImageComposeScene((1440 * scale).roundToInt(), (900 * scale).roundToInt(), density = Density(scale)) {
                     val localization = LocalLocalization.current
                     menuLabels = listOf(localization.cut, localization.copy, localization.paste, localization.selectAll)
-                    DesktopTheme(dark) { DesktopContent(state, DesktopActions(), initialPage = page,
-                        initialSourceRecordId = state.selectedResult?.records?.firstOrNull {
-                            it.kind == RecordKind.LABEL && it.page > 0 && it.width > 0 && it.height > 0
-                        }?.id) }
+                    DesktopTheme(dark) {
+                        Box(Modifier.fillMaxSize()) {
+                            DesktopContent(state, DesktopActions(), initialPage = page,
+                                initialSourceRecordId = state.selectedResult?.records?.firstOrNull {
+                                    it.kind == RecordKind.LABEL && it.page > 0 && it.width > 0 && it.height > 0
+                                }?.id)
+                            if (name == "drop") DesktopFileDropOverlay()
+                        }
+                    }
                 }
             }
             try {
@@ -86,6 +99,17 @@ internal fun renderCloudPreviews(output: File) {
 internal fun runPackagedSmoke(output: File, fixture: File) = runBlocking {
     require(fixture.isFile)
     output.mkdirs()
+    val pickerDirectory = File(output, "中文选择器验证").apply { mkdirs() }
+    val pickerPdf = fixture.copyTo(File(pickerDirectory, "电气图纸.pdf"))
+    val nativePickers = listOf(
+        DesktopFileDialogs.verifyWindowsBindings(false, pickerPdf),
+        DesktopFileDialogs.verifyWindowsBindings(true, pickerDirectory),
+    )
+    require(nativePickers.all { it.staApartment })
+    require(nativePickers[0].unicodeFileName == "电气图纸 中文路径.pdf")
+    require(nativePickers[1].unicodeFileName == "导出文件夹 中文路径")
+    require(Files.isSameFile(File(nativePickers[0].shellItemPath).toPath(), pickerPdf.toPath()))
+    require(Files.isSameFile(File(nativePickers[1].shellItemPath).toPath(), pickerDirectory.toPath()))
     val root = File(output, "workspace").toPath()
     val controller = DesktopController(root)
     var resumed: DesktopController? = null
@@ -138,11 +162,13 @@ internal fun runPackagedSmoke(output: File, fixture: File) = runBlocking {
         require(!File(victim.uri).exists() && resumed.state.value.data.exports.size == 1)
         require(java.util.Locale.getDefault().language == "zh") { "Packaged application locale is not Chinese" }
         require(javax.swing.UIManager.getString("OptionPane.cancelButtonText") == "取消")
-        val report = mapOf("ok" to true, "version" to "0.1.1", "fixture" to fixture.name,
+        val report = mapOf("ok" to true, "version" to "0.1.2", "fixture" to fixture.name,
             "language" to "zh-CN",
+            "nativeWindowsDialogs" to nativePickers,
             "pages" to original.pageCount, "records" to original.records.size,
             "checks" to listOf("bundled runtime", "PDF import", "native extraction", "edit and undo", "non-overwriting XLSX export",
-                "favorite persistence", "theme persistence", "restart reload", "actual file deletion", "bundled offline Python"))
+                "favorite persistence", "theme persistence", "restart reload", "actual file deletion", "bundled offline Python",
+                "native Windows dialog configuration and Unicode paths"))
         File(output, "smoke-result.json").writeText(GsonBuilder().setPrettyPrinting().create().toJson(report))
     } finally {
         controller.close()

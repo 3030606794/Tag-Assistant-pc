@@ -135,15 +135,15 @@ internal fun DesktopResultsTable(result: ExtractionResult?, canUndo: Boolean, ac
             }
         }
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
-            val tableWidth = maxOf(maxWidth, 610.dp)
+            val tableWidth = maxOf(maxWidth, 720.dp)
             Column(Modifier.fillMaxSize().padding(bottom = 10.dp).horizontalScroll(tableHorizontal).focusRequester(tableFocus).focusable()) {
-                Row(Modifier.width(tableWidth).height(38.dp).background(MaterialTheme.colorScheme.surfaceContainerHigh).padding(start = 8.dp, end = 18.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(checked = visible.isNotEmpty() && selected.size == visible.size, onCheckedChange = { selected = if (it) visible.map { record -> record.id }.toSet() else emptySet() }, modifier = Modifier.width(34.dp))
-                    TableCell("序号", Modifier.width(48.dp), true)
-                    TableCell("类型", Modifier.width(68.dp), true)
-                    TableCell("柜体", Modifier.width(74.dp), true)
+                Row(Modifier.width(tableWidth).height(48.dp).background(MaterialTheme.colorScheme.surfaceContainerHigh).padding(start = 8.dp, end = 18.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = visible.isNotEmpty() && selected.size == visible.size, onCheckedChange = { selected = if (it) visible.map { record -> record.id }.toSet() else emptySet() }, modifier = Modifier.width(40.dp))
+                    TableCell("序号", Modifier.width(56.dp), true)
+                    TableCell("类型", Modifier.width(96.dp), true)
+                    TableCell("柜体", Modifier.width(100.dp), true)
                     TableCell("标签内容", Modifier.weight(1f), true)
-                    TableCell("来源页", Modifier.width(64.dp), true)
+                    TableCell("来源页", Modifier.width(76.dp), true)
                 }
                 Box(Modifier.width(tableWidth).weight(1f)) {
                 LazyColumn(Modifier.fillMaxSize().padding(end = 10.dp), state = listState) {
@@ -156,19 +156,19 @@ internal fun DesktopResultsTable(result: ExtractionResult?, canUndo: Boolean, ac
                             index % 2 == 0 -> MaterialTheme.colorScheme.surface
                             else -> MaterialTheme.colorScheme.surfaceContainerLow
                         }
-                        Row(Modifier.fillMaxWidth().heightIn(min = 42.dp).background(color)
+                        Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).background(color)
                             .onPointerEvent(PointerEventType.Press) { event -> controlClick = event.keyboardModifiers.isCtrlPressed; shiftClick = event.keyboardModifiers.isShiftPressed }
                             .combinedClickable(onClick = { tableFocus.requestFocus(); select(record, controlClick, shiftClick) },
                                 onDoubleClick = { if (record.kind == RecordKind.LABEL && record.column != LabelColumn.QUANTITY) editing = record.id })
                             .padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(record.id in selected, { select(record, true, false) }, Modifier.width(34.dp))
-                            TableCell((originalOrder[record.id] ?: index + 1).toString(), Modifier.width(48.dp))
-                            TableCell("${record.column.letter} ${record.column.title}", Modifier.width(68.dp))
-                            TableCell(record.layout.ifBlank { "—" }, Modifier.width(74.dp))
-                            Text(record.text, Modifier.weight(1f).padding(horizontal = 6.dp, vertical = 8.dp), style = if (heading) MaterialTheme.typography.titleSmall else MaterialTheme.typography.bodyMedium,
+                            Checkbox(record.id in selected, { select(record, true, false) }, Modifier.width(40.dp))
+                            TableCell((originalOrder[record.id] ?: index + 1).toString(), Modifier.width(56.dp))
+                            TableCell("${record.column.letter} ${record.column.title}", Modifier.width(96.dp))
+                            TableCell(record.layout.ifBlank { "—" }, Modifier.width(100.dp))
+                            Text(record.text, Modifier.weight(1f).padding(horizontal = 6.dp, vertical = 8.dp), style = if (heading) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyLarge,
                                 maxLines = 2, overflow = TextOverflow.Ellipsis, color = if (record.edited) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
-                            if (record.page > 0) TextButton(onClick = { onSource(record) }, modifier = Modifier.width(64.dp), contentPadding = PaddingValues(2.dp)) { Text(record.page.toString(), style = MaterialTheme.typography.labelMedium) }
-                            else TableCell("—", Modifier.width(64.dp))
+                            if (record.page > 0) TextButton(onClick = { onSource(record) }, modifier = Modifier.width(76.dp), contentPadding = PaddingValues(2.dp)) { Text(record.page.toString(), style = MaterialTheme.typography.labelMedium) }
+                            else TableCell("—", Modifier.width(76.dp))
                         }
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .45f))
                     }
