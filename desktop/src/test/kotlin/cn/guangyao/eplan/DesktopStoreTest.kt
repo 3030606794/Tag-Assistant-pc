@@ -2,6 +2,7 @@ package cn.guangyao.eplan
 
 import com.google.gson.Gson
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeout
 import org.junit.Assert.*
 import org.junit.Rule
@@ -328,6 +329,88 @@ class DesktopExportFilesTest {
 
 class DesktopControllerEditsTest {
     @get:Rule val temporary = TemporaryFolder()
+
+    @Test fun documentAndResultSelectionsStayTogetherIncludingLatestAndEmptyResults() = runBlocking {
+        val root = temporary.newFolder().toPath()
+        val store = DesktopStore(root)
+        fun imported(name: String) = store.importDocument(File(temporary.root, name).apply { writeText("%PDF-1.7\n") }, { false }) { _, _ -> }
+        val first = imported("first.pdf")
+        val second = imported("second.pdf")
+        val empty = imported("not-extracted.pdf")
+        val older = sampleDesktopResult(first.id).copy(id = "older", documentName = first.name, createdAt = 1)
+        val latest = sampleDesktopResult(first.id).copy(id = "latest", documentName = first.name, createdAt = 3)
+        val other = sampleDesktopResult(second.id).copy(id = "other", documentName = second.name, createdAt = 2)
+        store.saveWorkspace(PocketData(documents = listOf(first, second, empty), results = listOf(older, latest, other)))
+        val controller = DesktopController(root)
+        try {
+            withTimeout(10_000) { controller.awaitIdle() }
+            assertEquals(first.id, controller.state.value.selectedDocumentId)
+            assertEquals(latest.id, controller.state.value.selectedResultId)
+            controller.editRecord("device-1", "1KM09")
+            withTimeout(10_000) { controller.awaitIdle() }
+            assertTrue(controller.state.value.canUndo)
+
+            controller.selectDocument(second.id)
+            withTimeout(10_000) { controller.state.first { it.selectedDocumentId == second.id } }
+            assertEquals(other.id, controller.state.value.selectedResultId)
+            assertFalse(controller.state.value.canUndo)
+
+            controller.selectResult(latest.id)
+            withTimeout(10_000) { controller.state.first { it.selectedResultId == latest.id } }
+            assertEquals(first.id, controller.state.value.selectedDocumentId)
+            assertTrue(controller.state.value.canUndo)
+
+            controller.selectDocument(empty.id)
+            withTimeout(10_000) { controller.state.first { it.selectedDocumentId == empty.id } }
+            assertNull(controller.state.value.selectedResult)
+            assertFalse(controller.state.value.canUndo)
+
+            controller.selectDocument(first.id)
+            withTimeout(10_000) { controller.state.first { it.selectedDocumentId == first.id } }
+            assertEquals(latest.id, controller.state.value.selectedResultId)
+            controller.selectResult(older.id)
+            withTimeout(10_000) { controller.state.first { it.selectedResultId == older.id } }
+            assertEquals(first.id, controller.state.value.selectedDocumentId)
+            assertFalse(controller.state.value.canUndo)
+
+            controller.deleteResult(older.id)
+            withTimeout(10_000) { controller.awaitIdle() }
+            assertEquals(first.id, controller.state.value.selectedDocumentId)
+            assertEquals(latest.id, controller.state.value.selectedResultId)
+            controller.deleteDocument(first.id)
+            withTimeout(10_000) { controller.awaitIdle() }
+            assertEquals(second.id, controller.state.value.selectedDocumentId)
+            assertEquals(other.id, controller.state.value.selectedResultId)
+        } finally { controller.close() }
+    }
+
+    @Test fun importingNewDocumentSelectsItsPdfAndClearsPreviousResultWithoutDeletingIt() = runBlocking {
+        val root = temporary.newFolder().toPath()
+        val store = DesktopStore(root)
+        val oldSource = File(temporary.root, "existing.pdf").apply { writeText("%PDF-1.7\n") }
+        val original = store.importDocument(oldSource, { false }) { _, _ -> }
+        val result = sampleDesktopResult(original.id).let { previous -> previous.copy(documentName = original.name,
+            records = previous.records.map { if (it.kind == RecordKind.FILE_LABEL) it.copy(text = original.name, sourceText = original.name) else it }) }
+        store.saveWorkspace(PocketData(documents = listOf(original), results = listOf(result)))
+        val newSource = File(temporary.root, "new-import.pdf").apply { writeText("%PDF-1.7\n") }
+        val controller = DesktopController(root)
+        try {
+            withTimeout(10_000) { controller.awaitIdle() }
+            assertEquals(result.id, controller.state.value.selectedResultId)
+
+            controller.importFiles(listOf(newSource))
+            withTimeout(10_000) { controller.awaitIdle() }
+
+            assertEquals(newSource.name, controller.state.value.selectedDocument!!.name)
+            assertNull(controller.state.value.selectedResultId)
+            assertNull(controller.state.value.selectedResult)
+            assertFalse(controller.state.value.canUndo)
+            assertEquals(listOf(result), controller.state.value.data.results)
+            assertEquals(2, DesktopStore(root).load().data.documents.size)
+            assertTrue(oldSource.exists())
+            assertTrue(newSource.exists())
+        } finally { controller.close() }
+    }
 
     @Test fun editAndBatchDeletionAreDurableAndEachOperationHasOneUndoStep() = runBlocking {
         val root = temporary.newFolder().toPath()

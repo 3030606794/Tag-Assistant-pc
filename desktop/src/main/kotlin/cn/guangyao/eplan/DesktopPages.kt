@@ -118,7 +118,7 @@ internal fun DesktopSettingsPage(state: DesktopState, actions: DesktopActions, m
                     OutlinedButton(onClick = actions.openDataFolder, shape = RoundedCornerShape(10.dp)) { Text("打开本机数据目录") }
                 }
                 else -> {
-                    Text("检查本机文件和导出目录，报告仅保存在当前工作区。", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("检查本机文件和导出目录，可复制本次检查报告。", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Button(onClick = { actions.runDiagnostics?.invoke() }, enabled = actions.runDiagnostics != null && !state.progress.running, shape = RoundedCornerShape(10.dp)) { Text("检查本地文件") }
                         OutlinedButton(onClick = actions.openDataFolder, shape = RoundedCornerShape(10.dp)) { Text("打开数据目录") }

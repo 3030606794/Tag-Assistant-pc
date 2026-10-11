@@ -75,10 +75,12 @@ class DesktopController(val root: Path) : AutoCloseable {
                     store = DesktopStore(root.toAbsolutePath().normalize())
                     store.load()
                 }
+                val selectedDocument = loaded.data.documents.firstOrNull()?.id ?: loaded.data.results.firstOrNull()?.documentId
+                val selectedResult = loaded.data.results.filter { it.documentId == selectedDocument }.maxByOrNull { it.createdAt }
                 mutable.value = DesktopState(
                     data = loaded.data,
-                    selectedDocumentId = loaded.data.documents.firstOrNull()?.id,
-                    selectedResultId = loaded.data.results.firstOrNull()?.id,
+                    selectedDocumentId = selectedDocument,
+                    selectedResultId = selectedResult?.id,
                     theme = loaded.theme,
                     exportDirectory = loaded.exportDirectory,
                     message = loaded.message,
@@ -119,7 +121,7 @@ class DesktopController(val root: Path) : AutoCloseable {
                     imported = document
                     val next = mutable.value.data.copy(documents = listOf(document) + mutable.value.data.documents)
                     store.saveWorkspace(next)
-                    publish { it.copy(data = next, selectedDocumentId = document.id, canUndo = undoAvailable(it.selectedResultId)) }
+                    publish { it.copy(data = next, selectedDocumentId = document.id, selectedResultId = null, canUndo = false) }
                     count++
                 } catch (error: Exception) {
                     imported?.let { runCatching { store.discardImported(it) } }
@@ -133,12 +135,16 @@ class DesktopController(val root: Path) : AutoCloseable {
     }
 
     fun selectDocument(id: String) = onMain {
-        if (mutable.value.data.documents.any { it.id == id }) mutable.update { it.copy(selectedDocumentId = id) }
+        if (mutable.value.data.documents.any { it.id == id }) mutable.update {
+            val selected = it.data.results.filter { result -> result.documentId == id }.maxByOrNull { result -> result.createdAt }
+            it.copy(selectedDocumentId = id, selectedResultId = selected?.id, canUndo = undoAvailable(selected?.id))
+        }
     }
 
     fun selectResult(id: String) = onMain {
         if (mutable.value.data.results.any { it.id == id }) mutable.update {
-            it.copy(selectedResultId = id, canUndo = undoAvailable(id))
+            val selected = it.data.results.first { result -> result.id == id }
+            it.copy(selectedDocumentId = selected.documentId, selectedResultId = id, canUndo = undoAvailable(id))
         }
     }
 
@@ -164,7 +170,7 @@ class DesktopController(val root: Path) : AutoCloseable {
                     documents = current.documents.map { if (it.id == document.id) it.copy(pageCount = result.pageCount) else it },
                 )
                 store.saveWorkspace(next)
-                publish { it.copy(data = next, selectedResultId = normalized.id, canUndo = false) }
+                publish { it.copy(data = next, selectedDocumentId = document.id, selectedResultId = normalized.id, canUndo = false) }
             }
             notice(if (result.completed) "提取完成，结果已自动保存。" else "已保存部分结果；可查看说明并再次提取。")
         }
@@ -311,9 +317,12 @@ class DesktopController(val root: Path) : AutoCloseable {
         val warning = store.removeDocuments(listOf(document), next)
         resultIds.forEach { undoHistory.remove(it) }
         publish {
-            val selectedResult = it.selectedResultId?.takeUnless { selected -> selected in resultIds } ?: next.results.firstOrNull()?.id
+            val selectedDocument = it.selectedDocumentId?.takeUnless { selected -> selected == id }
+                ?: next.documents.firstOrNull()?.id ?: next.results.firstOrNull()?.documentId
+            val selectedResult = it.selectedResultId?.takeUnless { selected -> selected in resultIds }
+                ?: next.results.filter { result -> result.documentId == selectedDocument }.maxByOrNull { result -> result.createdAt }?.id
             it.copy(data = next,
-            selectedDocumentId = it.selectedDocumentId?.takeUnless { selected -> selected == id } ?: next.documents.firstOrNull()?.id,
+            selectedDocumentId = selectedDocument,
             selectedResultId = selectedResult, canUndo = undoAvailable(selectedResult)) }
         notice(warning ?: "已删除应用中的图纸副本及对应结果；原 PDF 和导出 Excel 保留。")
     }
@@ -333,7 +342,8 @@ class DesktopController(val root: Path) : AutoCloseable {
         store.saveWorkspace(next)
         undoHistory.remove(id)
         publish {
-            val selectedResult = it.selectedResultId?.takeUnless { selected -> selected == id } ?: next.results.firstOrNull()?.id
+            val selectedResult = it.selectedResultId?.takeUnless { selected -> selected == id }
+                ?: next.results.filter { result -> result.documentId == it.selectedDocumentId }.maxByOrNull { result -> result.createdAt }?.id
             it.copy(data = next, selectedResultId = selectedResult, canUndo = undoAvailable(selectedResult)) }
         notice("结果已删除；图纸和导出文件保留。")
     }

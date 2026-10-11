@@ -27,6 +27,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -36,33 +37,48 @@ import org.apache.pdfbox.rendering.ImageType
 import org.apache.pdfbox.rendering.PDFRenderer
 import java.io.File
 import java.io.IOException
+import java.nio.file.Files
 import kotlin.math.min
 
 private data class DesktopRenderedPage(val image: ImageBitmap, val width: Float, val height: Float, val pageCount: Int)
+private class DesktopPreviewUnavailable(val decision: DesktopPdfPreviewBudget.Decision) : IOException(decision.message ?: "此 PDF 暂时无法内嵌预览。")
 
 /** Native page rendering is serialized; every request owns and closes a regular PDDocument. */
 private object DesktopPageRenderer {
     private val mutex = Mutex()
     suspend fun render(path: String, page: Int): DesktopRenderedPage = mutex.withLock {
         withContext(Dispatchers.IO) {
-            currentCoroutineContext().ensureActive()
+            val requestContext = currentCoroutineContext()
+            requestContext.ensureActive()
             val file = File(path)
             if (!file.isFile || !file.canRead()) throw IOException("原 PDF 已不存在或无法读取。")
-            PDDocument.load(file, MemoryUsageSetting.setupTempFileOnly()).use { document ->
-                if (page !in 1..document.numberOfPages) throw IOException("页码超出范围，请输入 1–${document.numberOfPages}。")
-                val pdfPage = document.getPage(page - 1)
-                val crop = pdfPage.cropBox
-                val rotation = (pdfPage.rotation % 360 + 360) % 360
-                val width = if (rotation % 180 == 0) crop.width else crop.height
-                val height = if (rotation % 180 == 0) crop.height else crop.width
-                if (!width.isFinite() || !height.isFinite() || width <= 0 || height <= 0) throw IOException("此页尺寸无效。")
-                // Bound raster allocation independently from the size of the original engineering sheet.
-                val scale = (1800f / maxOf(width, height)).coerceAtMost(2f)
-                val buffered = PDFRenderer(document).apply { isSubsamplingAllowed = true }.renderImage(page - 1, scale, ImageType.RGB)
-                try {
-                    currentCoroutineContext().ensureActive()
-                    DesktopRenderedPage(buffered.toComposeImageBitmap(), width, height, document.numberOfPages)
-                } finally { buffered.flush() }
+            val scratchDirectory = Files.createTempDirectory("eplan-preview-").toFile()
+            try {
+                // The incremental reader inspects a bounded metadata graph only. Its deliberately
+                // skipped image resources must never be copied into a document used for rendering.
+                val decision = DesktopPdfPreviewBudget.inspect(file, scratchDirectory) { !requestContext.isActive }
+                requestContext.ensureActive()
+                if (!decision.allowed) throw DesktopPreviewUnavailable(decision)
+                val memory = MemoryUsageSetting.setupTempFileOnly(256L * 1024 * 1024).setTempDir(scratchDirectory)
+                PDDocument.load(file, memory).use { document ->
+                    if (page !in 1..document.numberOfPages) throw IOException("页码超出范围，请输入 1–${document.numberOfPages}。")
+                    val pdfPage = document.getPage(page - 1)
+                    val crop = pdfPage.cropBox
+                    val rotation = (pdfPage.rotation % 360 + 360) % 360
+                    val width = if (rotation % 180 == 0) crop.width else crop.height
+                    val height = if (rotation % 180 == 0) crop.height else crop.width
+                    if (!width.isFinite() || !height.isFinite() || width <= 0 || height <= 0) throw IOException("此页尺寸无效。")
+                    // Bound raster allocation independently from the size of the original engineering sheet.
+                    val scale = (1800f / maxOf(width, height)).coerceAtMost(2f)
+                    val buffered = PDFRenderer(document).apply { isSubsamplingAllowed = true }.renderImage(page - 1, scale, ImageType.RGB)
+                    try {
+                        requestContext.ensureActive()
+                        DesktopRenderedPage(buffered.toComposeImageBitmap(), width, height, document.numberOfPages)
+                    } finally { buffered.flush() }
+                }
+            } finally {
+                // PDFBox closes and removes its scratch files before this empty private directory.
+                scratchDirectory.delete()
             }
         }
     }
@@ -75,6 +91,7 @@ internal fun DesktopPdfPreview(document: ImportedDocument?, record: LabelRecord?
     var zoom by remember(document?.id) { mutableFloatStateOf(1f) }
     var request by remember { mutableIntStateOf(0) }
     var rendered by remember(document?.id) { mutableStateOf<DesktopRenderedPage?>(null) }
+    var inspectedPageCount by remember(document?.id) { mutableIntStateOf(0) }
     var failure by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(false) }
     val horizontal = rememberScrollState()
@@ -87,14 +104,19 @@ internal fun DesktopPdfPreview(document: ImportedDocument?, record: LabelRecord?
         rendered = null; failure = null
         val source = document ?: return@LaunchedEffect
         loading = true
-        try { rendered = DesktopPageRenderer.render(source.path, page) }
+        try {
+            val result = DesktopPageRenderer.render(source.path, page)
+            inspectedPageCount = result.pageCount
+            rendered = result
+        }
         catch (error: CancellationException) { throw error }
+        catch (error: DesktopPreviewUnavailable) { inspectedPageCount = error.decision.pageCount; failure = error.message }
         catch (_: OutOfMemoryError) { failure = "此页占用内存较多，暂时无法预览。可用外部 PDF 阅读器打开。" }
         catch (error: Exception) { failure = error.message ?: "无法预览此页。" }
         finally { loading = false }
     }
     LaunchedEffect(page, document?.id) { horizontal.scrollTo(0); vertical.scrollTo(0) }
-    val count = rendered?.pageCount ?: document?.pageCount ?: 0
+    val count = rendered?.pageCount ?: inspectedPageCount.takeIf { it > 0 } ?: document?.pageCount ?: 0
     fun goToPage() {
         val number = pageText.toIntOrNull()
         if (number != null && number > 0 && (count == 0 || number <= count)) page = number
@@ -165,6 +187,9 @@ internal fun DesktopPdfPreview(document: ImportedDocument?, record: LabelRecord?
                 failure?.let { message ->
                     Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+                        OutlinedButton(onClick = onOpenExternal, enabled = document != null, shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)) {
+                            Symbol("open_in_new", modifier = Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("用外部阅读器打开")
+                        }
                         Button(onClick = { request++ }, shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)) { Text("重试预览") }
                     }
                 }

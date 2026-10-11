@@ -452,10 +452,11 @@ class OfflinePdfEngine(
         private var textRun = -1
         fun read(document: PDDocument, page: Int): PdfPageText {
             // Process one page directly instead of walking the complete page tree for every read.
-            // The superclass page counter stays at zero because processPages below avoids that loop.
+            // Apache PDFBox 2.0.37 resets its page counter to one. Our processPages override
+            // selects the actual page directly; the superclass gate must still permit counter 1.
             targetPage = page - 1
-            startPage = 0
-            endPage = 0
+            startPage = 1
+            endPage = 1
             setShouldSeparateByBeads(false)
             sortByPosition = false
             suppressDuplicateOverlappingText = false

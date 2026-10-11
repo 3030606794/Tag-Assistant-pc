@@ -170,14 +170,15 @@ internal fun DesktopContent(state: DesktopState, actions: DesktopActions, initia
                         }
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
-                            val showPdf = previewOpen && maxWidth >= 760.dp
+                            val availableWidth = maxWidth
+                            val showPdf = previewOpen && availableWidth >= 760.dp
                             Row(Modifier.fillMaxSize()) {
                                 DesktopResultsTable(result, state.canUndo, actions,
                                     onSource = { sourceRecordId = it.id; issueSource = it.takeIf { item -> item.id.startsWith("issue_") }; previewOpen = true }, modifier = Modifier.weight(1f).fillMaxHeight())
                                 if (showPdf) {
                                     VerticalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                                     DesktopPdfPreview(document, sourceRecord, onOpenExternal = { document?.let { actions.openFile(it.path) } },
-                                        onClose = { previewOpen = false }, modifier = Modifier.width((maxWidth * .40f).coerceIn(320.dp, 460.dp)).fillMaxHeight())
+                                        onClose = { previewOpen = false }, modifier = Modifier.width((availableWidth * .40f).coerceIn(320.dp, 460.dp)).fillMaxHeight())
                                 }
                             }
                             if (previewOpen && !showPdf && document != null) {

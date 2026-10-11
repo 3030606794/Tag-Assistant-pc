@@ -56,6 +56,22 @@ class PageTextProvenanceTest {
         assertEquals("TJ's jump is split geometrically, despite its shared operation", native[3].sourceRun, native[4].sourceRun)
     }
 
+    @Test fun directSecondPageSelectionUsesApacheOneBasedGateWithoutReadingTheFirstPage() = withPdf("""
+        BT /F1 10 Tf 20 300 Td (FIRST) Tj ET
+    """.trimIndent()) { pdf ->
+        val second = PDPage(PDRectangle(400f, 400f)).apply {
+            resources = pdf.getPage(0).resources
+            setContents(PDStream(pdf, ByteArrayInputStream("BT /F1 10 Tf 30 250 Td (SECOND) Tj ET".toByteArray(Charsets.US_ASCII))))
+        }
+        pdf.addPage(second)
+        val page = read(pdf, 2)
+        val native = requireNotNull(page.layoutBoxes)
+        assertEquals(2, page.page)
+        assertEquals(listOf("SECOND"), native.map { it.text })
+        assertEquals(listOf("SECOND"), page.boxes.map { it.text })
+        assertEquals(30f, native.single().baselineX, .001f)
+    }
+
     @Test fun cacheRoundTripPreservesBothTextViewsAndSourceIdentity() = withPdf("""
         BT /F1 10 Tf 20 300 Td (1:START) Tj ET
         BT /F1 10 Tf 25 300 Td (2:ALARM) Tj ET
@@ -89,11 +105,11 @@ class PageTextProvenanceTest {
         } finally { file.delete(); directory.delete() }
     }
 
-    private fun read(pdf: PDDocument): PdfPageText {
+    private fun read(pdf: PDDocument, page: Int = 1): PdfPageText {
         val readerClass = Class.forName("cn.guangyao.eplan.OfflinePdfEngine\$PositionedStripper")
         val reader = readerClass.declaredConstructors.single().apply { isAccessible = true }.newInstance({ false } as () -> Boolean)
         return readerClass.getDeclaredMethod("read", PDDocument::class.java, Int::class.javaPrimitiveType)
-            .apply { isAccessible = true }.invoke(reader, pdf, 1) as PdfPageText
+            .apply { isAccessible = true }.invoke(reader, pdf, page) as PdfPageText
     }
 
     private fun withPdf(content: String, action: (PDDocument) -> Unit) {

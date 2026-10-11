@@ -51,6 +51,12 @@ public final class IncrementalPdfDocument implements Closeable {
     private final File sourceFile;
 
     public IncrementalPdfDocument(File sourceFile, File cacheDirectory, BooleanSupplier cancelled) throws IOException {
+        this(sourceFile, cacheDirectory, cancelled, 200_000);
+    }
+
+    /** Lower structural opening budget for optional preview probes; extraction keeps its original limit. */
+    public IncrementalPdfDocument(File sourceFile, File cacheDirectory, BooleanSupplier cancelled, int maxStructuralNodes) throws IOException {
+        if (maxStructuralNodes < 1 || maxStructuralNodes > 200_000) throw new IllegalArgumentException("Invalid structural node budget");
         this.sourceFile = sourceFile;
         RandomAccessBufferedFileInputStream source = new CancellableSource(sourceFile, cancelled);
         ScratchFile scratch = null;
@@ -58,7 +64,7 @@ public final class IncrementalPdfDocument implements Closeable {
         try {
             // A fixed input LRU (~4 MiB) and disk-only compressed/decompressed streams, not byte[].
             scratch = new ScratchFile(MemoryUsageSetting.setupTempFileOnly(1536L * 1024 * 1024).setTempDir(cacheDirectory));
-            candidate = new PageParser(source, scratch, cancelled);
+            candidate = new PageParser(source, scratch, cancelled, maxStructuralNodes);
             candidate.parse();
             pdf = candidate.getPDDocument();
             parser = candidate;
@@ -175,9 +181,10 @@ public final class IncrementalPdfDocument implements Closeable {
         private final List<COSDictionary> pageDictionaries = new ArrayList<>();
         private final Map<COSStream, ImageRange> imageRanges = new IdentityHashMap<>();
         private final BooleanSupplier cancelled;
+        private final int maxStructuralNodes;
         private int structuralNodes;
 
-        PageParser(RandomAccessBufferedFileInputStream source, ScratchFile scratch, BooleanSupplier cancelled) throws IOException {
+        PageParser(RandomAccessBufferedFileInputStream source, ScratchFile scratch, BooleanSupplier cancelled, int maxStructuralNodes) throws IOException {
             // PDFParser creates a COSDocument with a private boxed HashMap. Close its empty,
             // independent scratch owner before installing the compact-index document. Sharing the
             // real scratch with that abandoned object would let its finalizer close our live file.
@@ -186,6 +193,7 @@ public final class IncrementalPdfDocument implements Closeable {
             document = new CompactPdfXref.Document(scratch);
             xrefTrailerResolver = new CompactPdfXref.Resolver();
             this.cancelled = cancelled;
+            this.maxStructuralNodes = maxStructuralNodes;
         }
 
         void checkCancelled() throws CancelledException {
@@ -302,7 +310,7 @@ public final class IncrementalPdfDocument implements Closeable {
             checkDepth(depth);
             COSBase base = pinValue(value);
             if (!(base instanceof COSDictionary) || !seen.add(base)) throw new IOException("PDF 页面树损坏或循环引用。");
-            if (++structuralNodes > MAX_NODES) throw new IOException("PDF 页面目录过于复杂，已安全停止；请按项目拆分。");
+            if (++structuralNodes > maxStructuralNodes) throw new IOException("PDF 页面目录过于复杂，已安全停止；请按项目拆分。");
             COSDictionary node = (COSDictionary) base;
             materialize(node.getItem(COSName.MEDIA_BOX), true, 0, identitySet());
             materialize(node.getItem(COSName.CROP_BOX), true, 0, identitySet());
@@ -328,7 +336,7 @@ public final class IncrementalPdfDocument implements Closeable {
             while (value != null) {
                 COSBase base = pinValue(value);
                 if (!(base instanceof COSDictionary) || !seen.add(base)) return;
-                if (++structuralNodes > MAX_NODES) throw new IOException("PDF 页面目录过于复杂，已安全停止；请按项目拆分。");
+                if (++structuralNodes > maxStructuralNodes) throw new IOException("PDF 页面目录过于复杂，已安全停止；请按项目拆分。");
                 COSDictionary node = (COSDictionary) base;
                 pinValue(node.getItem(COSName.TITLE));
                 String title = node.getString(COSName.TITLE, "").trim();
