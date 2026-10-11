@@ -63,16 +63,58 @@ jobs:
       - name: Packaged application offline smoke test
         shell: pwsh
         run: |
-          $app = Resolve-Path 'desktop/build/compose/binaries/main/app/EPLAN标签助手/EPLAN标签助手.exe'
-          $outDir = Join-Path $env:RUNNER_TEMP 'eplan-pc-smoke'
-          New-Item -ItemType Directory -Force -Path $outDir | Out-Null
+          $ErrorActionPreference = 'Stop'
+          $image = (Resolve-Path 'desktop/build/compose/binaries/main/app/EPLAN标签助手').Path
+          $previews = (Resolve-Path 'desktop/build/previews').Path
+          Get-ChildItem -LiteralPath (Join-Path $image 'app') -Filter '*.cfg' | ForEach-Object {
+            Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $previews ('launcher-' + $_.Name))
+          }
+          Get-ChildItem -LiteralPath $image | Select-Object Name, Length, Mode | ConvertTo-Json |
+            Set-Content -LiteralPath (Join-Path $previews 'launcher-files.json') -Encoding utf8
           $fixture = (Resolve-Path 'engine/src/test/resources/fixtures/layout-cabinet-native.pdf').Path
-          $process = Start-Process -FilePath $app.Path -ArgumentList @('--smoke-test', ('"' + $outDir + '"'), ('"' + $fixture + '"')) -WindowStyle Hidden -Wait -PassThru
-          if ($process.ExitCode -ne 0) { Get-Content (Join-Path $outDir 'smoke-error.txt') -ErrorAction SilentlyContinue; exit 1 }
-          $report = Join-Path $outDir 'smoke-result.json'
-          if (!(Test-Path $report)) { throw 'Packaged application did not create the smoke report' }
-          Copy-Item $report 'desktop/build/previews/smoke-result.json'
-          Get-Content $report
+          function Invoke-PackagedCheck([string]$ImageDirectory, [string]$ReportName) {
+            $app = Join-Path $ImageDirectory 'EPLAN标签助手.exe'
+            $outDir = Join-Path $env:RUNNER_TEMP ("eplan-pc-smoke/中文离线检查-$ReportName")
+            New-Item -ItemType Directory -Force -Path $outDir | Out-Null
+            $stdout = Join-Path $previews "$ReportName-stdout.txt"
+            $stderr = Join-Path $previews "$ReportName-stderr.txt"
+            $process = Start-Process -FilePath $app -ArgumentList @('--smoke-test', ('"' + $outDir + '"'), ('"' + $fixture + '"')) -WindowStyle Hidden -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+            if (!$process.WaitForExit(240000)) {
+              $process.Kill($true)
+              throw "Packaged application timed out: $ReportName"
+            }
+            $process.WaitForExit()
+            $errorFile = Join-Path $outDir 'smoke-error.txt'
+            if (Test-Path -LiteralPath $errorFile) {
+              Copy-Item -LiteralPath $errorFile -Destination (Join-Path $previews "$ReportName-error.txt")
+            }
+            if ($process.ExitCode -ne 0) {
+              Get-Content -LiteralPath $stdout, $stderr
+              Get-Content -LiteralPath $errorFile -ErrorAction SilentlyContinue
+              throw "Packaged application failed ($($process.ExitCode)): $ReportName"
+            }
+            $report = Join-Path $outDir 'smoke-result.json'
+            if (!(Test-Path -LiteralPath $report)) { throw "Packaged application did not create the smoke report: $ReportName" }
+            $result = Get-Content -LiteralPath $report -Raw | ConvertFrom-Json
+            if (!$result.ok -or $result.version -ne '0.1.2' -or $result.checks.Count -ne 11) {
+              throw "Packaged application reported incomplete checks: $ReportName"
+            }
+            Copy-Item -LiteralPath $report -Destination (Join-Path $previews "$ReportName.json")
+            Get-Content -LiteralPath $report
+          }
+          $previousDebug = $env:JPACKAGE_DEBUG
+          try {
+            $env:JPACKAGE_DEBUG = 'true'
+            Invoke-PackagedCheck -ImageDirectory $image -ReportName 'smoke-result'
+            $relocatedParent = Join-Path $env:RUNNER_TEMP '中文便携测试'
+            New-Item -ItemType Directory -Force -Path $relocatedParent | Out-Null
+            $relocated = Join-Path $relocatedParent 'EPLAN标签助手 便携版'
+            Copy-Item -LiteralPath $image -Destination $relocated -Recurse
+            Invoke-PackagedCheck -ImageDirectory $relocated -ReportName 'smoke-relocated-result'
+          } finally {
+            if ($null -eq $previousDebug) { Remove-Item Env:JPACKAGE_DEBUG -ErrorAction SilentlyContinue }
+            else { $env:JPACKAGE_DEBUG = $previousDebug }
+          }
       - name: Prepare delivery and checksums
         shell: pwsh
         run: |

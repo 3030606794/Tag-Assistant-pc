@@ -1,6 +1,6 @@
 # EPLAN 标签助手 PC · 0.1.2 中文版
 
-Windows 10/11 x64 的离线桌面工具。读取 EPLAN 导出的带文字 PDF，提取号码标签，查看来源、编辑结果并直接生成 Excel。Purple 浅深色、跟随系统和 Material Symbols Rounded 延续手机版设计；内置 Noto Sans SC 中文无衬线字体，正文与表格字号放大；桌面采用图纸、结果表格、PDF 来源三栏工作台。
+Windows 10（1903 及以上）/11 x64 的离线桌面工具。读取 EPLAN 导出的带文字 PDF，提取号码标签，查看来源、编辑结果并直接生成 Excel。Purple 浅深色、跟随系统和 Material Symbols Rounded 延续手机版设计；内置 Noto Sans SC 中文无衬线字体，正文与表格字号放大；桌面采用图纸、结果表格、PDF 来源三栏工作台。
 
 ## 使用
 
@@ -12,6 +12,8 @@ Windows 10/11 x64 的离线桌面工具。读取 EPLAN 导出的带文字 PDF，
 6. 设置可选择跟随系统、浅色或深色；偏好重启保留。离线工具可检查导入副本存在性、大小、相同内容与 Excel 工作表/文本单元格/公式结构，不修改文件。
 
 默认数据目录：`%LOCALAPPDATA%\EplanTagAssistantPC`。图纸副本、结果、规则、文件收藏和主题均保存在本机。导出目录可以在设置中选择，支持监听与刷新。应用一次只允许一个实例写同一工作区；关闭处理中的任务会先取消并保存。
+
+启动器使用 Windows 的应用清单声明进程 UTF-8 编码，支持中文程序名、中文用户名与中文便携目录，不修改 Windows 全局语言或代码页。此能力要求 Windows 10 1903 及以上，见 [Microsoft 官方说明](https://learn.microsoft.com/en-us/windows/apps/design/globalizing/use-utf8-code-page)。
 
 快捷键包括 Ctrl+O 导入、Ctrl+E 导出；结果表格提供 Ctrl+C、Ctrl+Z、F2、Delete 和方向键。分组标题、数量与备用由业务规则管理，不能当普通标签随意改写。
 
