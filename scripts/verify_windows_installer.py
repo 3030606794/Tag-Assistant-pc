@@ -187,6 +187,9 @@ def inspect_installer(path: Path, application_name: str, version: str) -> dict:
 
 
 def main() -> None:
+    # GitHub's English Windows runner otherwise encodes piped stdout as cp1252.
+    # This only affects the evidence log; every MSI validation remains mandatory.
+    sys.stdout.reconfigure(encoding='utf-8')
     parser = argparse.ArgumentParser()
     parser.add_argument('--version', required=True)
     parser.add_argument('--application-name', default='EPLAN标签助手')
