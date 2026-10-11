@@ -53,13 +53,16 @@ function Get-PreservedManifestSettings([xml]$Document) {
 $launcher = Join-Path $image "$ApplicationName.exe"
 # Keep the SDK tool's native arguments ASCII too; PowerShell copies Unicode paths.
 Copy-Item -LiteralPath $launcher -Destination (Join-Path $generated 'launcher.exe') -Force
+(Get-Item -LiteralPath (Join-Path $generated 'launcher.exe')).IsReadOnly = $false
 Copy-Item -LiteralPath (Join-Path $resources 'launcher-utf8.manifest') -Destination $generated -Force
 Push-Location -LiteralPath $generated
 try {
     & $manifestTool '-nologo' '-inputresource:launcher.exe;#1' '-out:launcher-original.manifest'
     if ($LASTEXITCODE -ne 0) { throw 'Could not read the original launcher manifest.' }
-    & $manifestTool '-nologo' '-inputresource:launcher.exe;#1' '-manifest' 'launcher-utf8.manifest' '-outputresource:launcher.exe;#1'
+    & $manifestTool '-nologo' '-manifest' 'launcher-original.manifest' 'launcher-utf8.manifest' '-out:launcher-requested.manifest'
     if ($LASTEXITCODE -ne 0) { throw 'Could not merge the UTF-8 launcher manifest.' }
+    & $manifestTool '-nologo' '-manifest' 'launcher-requested.manifest' '-outputresource:launcher.exe;#1'
+    if ($LASTEXITCODE -ne 0) { throw 'Could not embed the UTF-8 launcher manifest.' }
     & $manifestTool '-nologo' '-inputresource:launcher.exe;#1' '-out:launcher-merged.manifest'
     if ($LASTEXITCODE -ne 0) { throw 'Could not read back the merged launcher manifest.' }
 } finally { Pop-Location }
