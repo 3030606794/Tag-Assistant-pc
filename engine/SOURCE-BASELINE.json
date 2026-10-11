@@ -1,0 +1,332 @@
+{
+  "sourceRepository": "https://github.com/3030606794/Tag-Assistant",
+  "sourceCommit": "6662ffbcd49cc6c9e2476523b5a3cb60d1c8a25d",
+  "sourceVersion": "0.6.12",
+  "sourceVersionCode": 20,
+  "purpose": "Original source hashes before JVM platform adaptations; bounded pre-existing regression fixtures only.",
+  "files": [
+    {
+      "path": "app/src/main/java/cn/guangyao/eplan/CompactPdfXref.java",
+      "bytes": 9557,
+      "sha256": "f8cd961b64cf121cee4cc9fa38baa134c7b789e1d0c246a7e985fb441b8b34b8"
+    },
+    {
+      "path": "app/src/main/java/cn/guangyao/eplan/IncrementalPdfDocument.java",
+      "bytes": 36909,
+      "sha256": "65cb759a062b8b71ab997a8a5a4d6953315d3f9a00025bf18a30d0bccf293f8c"
+    },
+    {
+      "path": "app/src/main/java/cn/guangyao/eplan/AbInstallationOrder.kt",
+      "bytes": 43974,
+      "sha256": "18b49e9757990f92342389adb8ace5652f67478f9cdbedc1e576a62ba465396a"
+    },
+    {
+      "path": "app/src/main/java/cn/guangyao/eplan/AbLabelRules.kt",
+      "bytes": 1034,
+      "sha256": "db992d7b6e3a67cc0e40e391744d32a70bbb5184344ac5eea4779cbad794cf2d"
+    },
+    {
+      "path": "app/src/main/java/cn/guangyao/eplan/AbLayoutAnalysis.kt",
+      "bytes": 85313,
+      "sha256": "06928a63ab6f614eafcc86e3a6508d9660a20ca5fa46ddff4ff6dd24f85f96fa"
+    },
+    {
+      "path": "app/src/main/java/cn/guangyao/eplan/AbOrderCache.kt",
+      "bytes": 3128,
+      "sha256": "897c474b65572480939a26bcc8d9ff99bee947316b0ef0e55fd6de8d962b3110"
+    },
+    {
+      "path": "app/src/main/java/cn/guangyao/eplan/DocumentNames.kt",
+      "bytes": 500,
+      "sha256": "982ed78df85f8451cac5fddc83f6638ccdfd26f04b9230f3f28d4b57730f9fc9"
+    },
+    {
+      "path": "app/src/main/java/cn/guangyao/eplan/EmbeddedLayoutRaster.kt",
+      "bytes": 10099,
+      "sha256": "3b49e29d39bcfe3dc51615ec6ca18e4e757aa8dafff525bdf987f3620009807f"
+    },
+    {
+      "path": "app/src/main/java/cn/guangyao/eplan/EplanParsing.kt",
+      "bytes": 17422,
+      "sha256": "d5dcc69ca6f57f9498ced1faf49137b68424160222dd4ac0a623fd76c1d8a75e"
+    },
+    {
+      "path": "app/src/main/java/cn/guangyao/eplan/LabelEdits.kt",
+      "bytes": 9133,
+      "sha256": "cdb1581eb950de917861da6ae982e5e5f0c93600c2edf0ab366b3c3b28f077b4"
+    },
+    {
+      "path": "app/src/main/java/cn/guangyao/eplan/LayoutFuseRatings.kt",
+      "bytes": 4446,
+      "sha256": "45640188873f410478569b4efa8603caccd21b7c761f42e2fcfb7e21268650f2"
+    },
+    {
+      "path": "app/src/main/java/cn/guangyao/eplan/OfflineModels.kt",
+      "bytes": 3542,
+      "sha256": "7a5f6f6c6af12145509a8ece360ca5e05e1933a07978679dfc0286253afadc46"
+    },
+    {
+      "path": "app/src/main/java/cn/guangyao/eplan/OfflinePdfEngine.kt",
+      "bytes": 41869,
+      "sha256": "3f6a2f45709ad7d802f5a6b2d556fb89ac13a9574a39b77d7638834e9473ee54"
+    },
+    {
+      "path": "app/src/main/java/cn/guangyao/eplan/XlsxExporter.kt",
+      "bytes": 10745,
+      "sha256": "af4fcca0a0f0a29b1a57f54df60befc2fa9074e5a03a4d4f70505192bcdea2ae"
+    },
+    {
+      "path": "app/src/test/java/cn/guangyao/eplan/AbInlineInstallationTest.kt",
+      "bytes": 10830,
+      "sha256": "93060a87a5e1b7aaef733e474530bf01a11a92161606018f9f0630ed81060eba"
+    },
+    {
+      "path": "app/src/test/java/cn/guangyao/eplan/AbInstallationOrderTest.kt",
+      "bytes": 31172,
+      "sha256": "95d61558fc6e4e2429c402a9baf627a8cd410450fe8515e21c20b9fb7fb163cd"
+    },
+    {
+      "path": "app/src/test/java/cn/guangyao/eplan/AbLayoutAnalysisTest.kt",
+      "bytes": 26440,
+      "sha256": "d60642271a30bae277924104c82a66fe038489abeed63ef1ce6d4f2ec7f5c44a"
+    },
+    {
+      "path": "app/src/test/java/cn/guangyao/eplan/AbLayoutRecoveryTest.kt",
+      "bytes": 10855,
+      "sha256": "a7fea9e0b70571017813768d01cf81845d6fbede531f8819519f6334544d26c0"
+    },
+    {
+      "path": "app/src/test/java/cn/guangyao/eplan/AbNativeFusePropertyTest.kt",
+      "bytes": 14451,
+      "sha256": "542f6717a6d62b49173f6427c902be8c492145e40eb7d1768a3b1f5300bf07d5"
+    },
+    {
+      "path": "app/src/test/java/cn/guangyao/eplan/AbOrderCacheTest.kt",
+      "bytes": 3653,
+      "sha256": "82d707a5f4811b11643481c405675bd5f0ee368397dd7cae1c3800b98f7be827"
+    },
+    {
+      "path": "app/src/test/java/cn/guangyao/eplan/AbTerminalBankTest.kt",
+      "bytes": 6581,
+      "sha256": "f80186c5acdd7e03065f7c4deb6ccc6431f87cfb019f077b307c2b1678d1bb71"
+    },
+    {
+      "path": "app/src/test/java/cn/guangyao/eplan/AbVerticalPropertyTest.kt",
+      "bytes": 11689,
+      "sha256": "d9d2aa31e8f18044fafa7f30a3745fc9084afca652745a74a86b8610022a2c7a"
+    },
+    {
+      "path": "app/src/test/java/cn/guangyao/eplan/CompactPdfXrefTest.kt",
+      "bytes": 4139,
+      "sha256": "20b3265ff19c136ede4488356f9801a91c7f066d39478d1447abf56d0c743e60"
+    },
+    {
+      "path": "app/src/test/java/cn/guangyao/eplan/DocumentNamesTest.kt",
+      "bytes": 1322,
+      "sha256": "01fef8a9e9520ad36ebb967889bdf92746d6a5ca56a3acbddd328dbb14589a8c"
+    },
+    {
+      "path": "app/src/test/java/cn/guangyao/eplan/EmbeddedLayoutRasterStreamTest.kt",
+      "bytes": 12373,
+      "sha256": "3dfbd2c0cb9475b42595bcb8ea2be1e156f040bc371098304f7ffee883bb957e"
+    },
+    {
+      "path": "app/src/test/java/cn/guangyao/eplan/EplanNativeTextTest.kt",
+      "bytes": 7680,
+      "sha256": "4941ec3ef665c18325283cc6384851ff0b7f7a8aed2cd0148af1555e8d4a93f2"
+    },
+    {
+      "path": "app/src/test/java/cn/guangyao/eplan/EplanParsingTest.kt",
+      "bytes": 6249,
+      "sha256": "9d1f9d2878da4b553fc6e05c7d580d629e7ffa82da297429932e0b49ee70cbc0"
+    },
+    {
+      "path": "app/src/test/java/cn/guangyao/eplan/IncrementalPdfLinksTest.kt",
+      "bytes": 13168,
+      "sha256": "981871f88326951287ff9548d43b1a9585a617e893cd39b1cf702591c4970423"
+    },
+    {
+      "path": "app/src/test/java/cn/guangyao/eplan/LabelEditsTest.kt",
+      "bytes": 11084,
+      "sha256": "813b7f981d1e52efb05b3d83e44c74370d2bf1ab1806f9b20f1e441ddf12e477"
+    },
+    {
+      "path": "app/src/test/java/cn/guangyao/eplan/LargePdfRegressionTest.kt",
+      "bytes": 12525,
+      "sha256": "37b1f670dcd33f09114358ba2a973b747482f35166fc1e2756efec40d5f7d115"
+    },
+    {
+      "path": "app/src/test/java/cn/guangyao/eplan/LayoutFuseRatingsTest.kt",
+      "bytes": 5125,
+      "sha256": "f273075711c884e51d8bf8a8d0df53cc0372d0c37d353e81c8709330d4aa7d08"
+    },
+    {
+      "path": "app/src/test/java/cn/guangyao/eplan/LongDocumentRegressionTest.kt",
+      "bytes": 5824,
+      "sha256": "9d46c0330d7c03085b5900435aaa8e16cd2775f87bf16dce9be250972e46dc1c"
+    },
+    {
+      "path": "app/src/test/java/cn/guangyao/eplan/OfflineAbIntegrationTest.kt",
+      "bytes": 14102,
+      "sha256": "8aebd1c92ebd66feb4d5195bd162dc633195755133921603c7b50c9190e3bc8e"
+    },
+    {
+      "path": "app/src/test/java/cn/guangyao/eplan/OfflineEmbeddedGeometryTest.kt",
+      "bytes": 28772,
+      "sha256": "cf44bfef576118705c029ab22c0e83e96fc7154bee24a5baf485df2094c82641"
+    },
+    {
+      "path": "app/src/test/java/cn/guangyao/eplan/OfflineLayoutOrderRegressionTest.kt",
+      "bytes": 13801,
+      "sha256": "9b82a82b1451f0a0a8cc5d3ba80fac4774927e1dde9545cf61751c8a2b8765aa"
+    },
+    {
+      "path": "app/src/test/java/cn/guangyao/eplan/OfflineLayoutRegressionTest.kt",
+      "bytes": 14449,
+      "sha256": "4a51ed126a5fcbad6f8398724a5100aadfefea843aec7057f51bd61b9506dde3"
+    },
+    {
+      "path": "app/src/test/java/cn/guangyao/eplan/OfflineNativeLayoutsTest.kt",
+      "bytes": 9616,
+      "sha256": "a49d1764e075feebe1df0ec9b6147a9d9bfaf188bd6f2c622e5bd795597a811d"
+    },
+    {
+      "path": "app/src/test/java/cn/guangyao/eplan/OfflinePdfEngineTest.kt",
+      "bytes": 8776,
+      "sha256": "13dd629000df033cfd8874bd3d5bc35fcdad7c8122bb521a58059db9c5d848c6"
+    },
+    {
+      "path": "app/src/test/java/cn/guangyao/eplan/PageTextProvenanceTest.kt",
+      "bytes": 6240,
+      "sha256": "e627c0adc5e58c5f80fe5355633195b7820cb68c1259abbc1598d1c23b4052e6"
+    },
+    {
+      "path": "app/src/test/java/cn/guangyao/eplan/XlsxExporterTest.kt",
+      "bytes": 8692,
+      "sha256": "85ba769e293e1cb7649928366511545950794c0a86924d81a50b7fbe9adbda7a"
+    },
+    {
+      "path": "app/src/test/resources/fixtures/b06-c01-order.json",
+      "bytes": 1761,
+      "sha256": "238ed0c6d4f7ffbf2cab4db75f81d480b59dea01b89541dff0a7b82d54414fd1"
+    },
+    {
+      "path": "app/src/test/resources/fixtures/b06-layouts-native.pdf",
+      "bytes": 2659885,
+      "sha256": "2846b8d061e2caf250f9977b8c77eb98c98a83ebdbe41db6a9fdd7d67876863e"
+    },
+    {
+      "path": "app/src/test/resources/fixtures/b06-layouts-p1.png",
+      "bytes": 123238,
+      "sha256": "ec0ba2252fdb8f116caa1eca572d2fa6e6d0b3b77c675488ae367ea91696a4b2"
+    },
+    {
+      "path": "app/src/test/resources/fixtures/b06-layouts-p2.png",
+      "bytes": 95817,
+      "sha256": "b4533861866a53b9a6beed08367e2409dda890e24978f953abc1954eb5db0547"
+    },
+    {
+      "path": "app/src/test/resources/fixtures/b06-layouts-p27.png",
+      "bytes": 35778,
+      "sha256": "b2f96e308fa4dd0a40d28dc0ea59fc0cc1150aaf6e3b365f264b261e989e2639"
+    },
+    {
+      "path": "app/src/test/resources/fixtures/b06-layouts-p28.png",
+      "bytes": 35653,
+      "sha256": "c732bcbc6572f530a7304affcd3e4176933ba61e5255654ee8ae3d1af73da989"
+    },
+    {
+      "path": "app/src/test/resources/fixtures/b06-layouts-p3.png",
+      "bytes": 42335,
+      "sha256": "317d1b2a4e4897553b480bb77fd1f66867af48ef85407d1d7d00685c80452704"
+    },
+    {
+      "path": "app/src/test/resources/fixtures/b06-layouts-p4.png",
+      "bytes": 37336,
+      "sha256": "2e6d1be4b8b6398f6ede51bac299b82695606dd3912b91b4a8058f5d6b550d90"
+    },
+    {
+      "path": "app/src/test/resources/fixtures/b06-layouts-p5.png",
+      "bytes": 45020,
+      "sha256": "a697da6ded47d764bb9961fc09fc32c3f34eefb82b115cbf53324f41ea3052da"
+    },
+    {
+      "path": "app/src/test/resources/fixtures/b26-fuse-expectations.json",
+      "bytes": 1304,
+      "sha256": "cdf8197c598bbc9bbbbd5168b9bda2172cc7e103ce685299d93d31d14f2c2beb"
+    },
+    {
+      "path": "app/src/test/resources/fixtures/b26-layout-census.json",
+      "bytes": 5302,
+      "sha256": "bc0cecf90ff38d21b9bb4f38d13fa9c6d73cf8804cd84e9cc50154119ce49bad"
+    },
+    {
+      "path": "app/src/test/resources/fixtures/b26-layouts-native.pdf",
+      "bytes": 884993,
+      "sha256": "0a2f70fd06b40fb51dabc58ac550c55621d69092add11635b5470c2a4f1627da"
+    },
+    {
+      "path": "app/src/test/resources/fixtures/india-layout-order.json",
+      "bytes": 16608,
+      "sha256": "c0d9c647b9693a52162a3744101293e32c800ad22cdf51a1bc55ff13d223b02d"
+    },
+    {
+      "path": "app/src/test/resources/fixtures/india-layouts-native.pdf",
+      "bytes": 886739,
+      "sha256": "0b90768a139fdceb9836c93e03bd80e0398e4830c55fdf7269a729f003e50ff6"
+    },
+    {
+      "path": "app/src/test/resources/fixtures/layout-cabinet-native.pdf",
+      "bytes": 181732,
+      "sha256": "d7258b1c392ee79f3ce6a07c69f5ce378fa43d440faf7282fe54790d3544c20f"
+    },
+    {
+      "path": "app/src/test/resources/fixtures/layout-order-native.pdf",
+      "bytes": 528322,
+      "sha256": "f07948688c5d065f47e1dc99ce5e2847186d2187ea5e6a480fc2328a38835946"
+    },
+    {
+      "path": "app/src/test/resources/fixtures/layout-order-p1.png",
+      "bytes": 175746,
+      "sha256": "2d3f53a197e72aededed43dd660bf19fdbd83155e2cafcd91355d8952ef62b43"
+    },
+    {
+      "path": "app/src/test/resources/fixtures/layout-order-p2.png",
+      "bytes": 205378,
+      "sha256": "c5777818b4de8b442d464f6a5b61a0bfe97007da023556abdb04f1e98861bf9f"
+    },
+    {
+      "path": "app/src/test/resources/fixtures/layout-order-p3.png",
+      "bytes": 120479,
+      "sha256": "d390610cbfab98497bee7a74db12b52df0cd04b8a395a0705319802143286463"
+    },
+    {
+      "path": "app/src/test/resources/fixtures/native-layout-census.json",
+      "bytes": 37693,
+      "sha256": "b8daa89b25475261de381ee271c5308c5de5d519deaa363e142ce40fe8cdd5be"
+    },
+    {
+      "path": "app/src/test/resources/fixtures/survey-layouts-native.pdf",
+      "bytes": 2948563,
+      "sha256": "f780ebc8a3ecc80f01cebcf41c8cab3488db3c5754bfee4e512c331251b2a424"
+    },
+    {
+      "path": "app/src/test/resources/fixtures/survey-layouts-p1.png",
+      "bytes": 182401,
+      "sha256": "f5ec2b35ea29daf1ba55bab8677b8f52233b10f57dc6bbf5f0b99cf25bd7564a"
+    },
+    {
+      "path": "app/src/test/resources/fixtures/survey-layouts-p2.png",
+      "bytes": 212581,
+      "sha256": "754c761b9053895dee3d67d942e07106cb2450847917db6b62b8380d012986b8"
+    },
+    {
+      "path": "app/src/test/resources/fixtures/survey-layouts-p3.png",
+      "bytes": 127587,
+      "sha256": "ac1ca1d288aa9d3a377b3b7d6c257f466640eca1d0cdafacb2cc388183bd5688"
+    }
+  ],
+  "verifiedAndroidBuildSourceCommit": "eae9b20df659384b1c919d8f74313fb251703f4e",
+  "verifiedAndroidBuildRun": "https://github.com/3030606794/Tag-Assistant/actions/runs/38105640959",
+  "comparison": "All copied main source and test source/resource paths are unchanged between the verified Android build commit and the later documentation/source-manifest commit."
+}
