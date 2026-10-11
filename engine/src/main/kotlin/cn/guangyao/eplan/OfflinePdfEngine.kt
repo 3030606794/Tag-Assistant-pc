@@ -193,7 +193,7 @@ class OfflinePdfEngine(
                         catch (error: IncrementalPdfDocument.CancelledException) { throw error }
                         catch (_: OutOfMemoryError) { geometryFailure = "当前页面图像处理内存不足"; null }
                         catch (_: LinkageError) { geometryFailure = "设备图像读取组件不可用"; null }
-                        catch (error: Exception) { geometryFailure = error.message ?: "布局图像读取失败"; null }
+                        catch (error: Exception) { geometryFailure = UserFacingErrors.describe(error, "布局图像读取失败"); null }
                         if (plan?.confident != true) {
                             issue((geometryFailure?.let { "$it。" } ?: "") +
                                 "此布局的安装行结构未能可靠识别，三列与单列沿用文字位置排序。", scope.page, scope.cabinet)

@@ -3,6 +3,7 @@
 package cn.guangyao.eplan
 
 import androidx.compose.ui.ImageComposeScene
+import androidx.compose.ui.platform.LocalLocalization
 import androidx.compose.ui.use
 import com.google.gson.GsonBuilder
 import kotlinx.coroutines.runBlocking
@@ -40,8 +41,11 @@ internal fun renderCloudPreviews(output: File) {
         for ((name, state, page) in states) for (dark in listOf(false, true)) {
             val target = File(output, "$name-${if (dark) "dark" else "light"}.png")
             lateinit var scene: ImageComposeScene
+            var menuLabels: List<String> = emptyList()
             SwingUtilities.invokeAndWait {
                 scene = ImageComposeScene(1440, 900) {
+                    val localization = LocalLocalization.current
+                    menuLabels = listOf(localization.cut, localization.copy, localization.paste, localization.selectAll)
                     DesktopTheme(dark) { DesktopContent(state, DesktopActions(), initialPage = page,
                         initialSourceRecordId = state.selectedResult?.records?.firstOrNull {
                             it.kind == RecordKind.LABEL && it.page > 0 && it.width > 0 && it.height > 0
@@ -54,6 +58,14 @@ internal fun renderCloudPreviews(output: File) {
                     Thread.sleep(20)
                 }
                 SwingUtilities.invokeAndWait {
+                    require(menuLabels.size == 4 && menuLabels.all { label -> label.any { it in '\u3400'..'\u9fff' } }) {
+                        "Standard text menus were not localized: $menuLabels"
+                    }
+                    if (name == "empty" && !dark) File(output, "localization-result.json").writeText(
+                        GsonBuilder().setPrettyPrinting().create().toJson(mapOf("ok" to true,
+                            "locale" to java.util.Locale.getDefault().toLanguageTag(), "textMenuItems" to menuLabels,
+                            "fileChooserOpen" to javax.swing.UIManager.getString("FileChooser.openButtonText"),
+                            "fileChooserCancel" to javax.swing.UIManager.getString("FileChooser.cancelButtonText"))))
                     scene.render(3_500_000_000L).use { image ->
                         image.encodeToData(EncodedImageFormat.PNG)?.use { encoded -> target.writeBytes(encoded.bytes) }
                             ?: error("Unable to encode preview")
@@ -124,7 +136,10 @@ internal fun runPackagedSmoke(output: File, fixture: File) = runBlocking {
         resumed.deleteExport(victim.id)
         idle(resumed)
         require(!File(victim.uri).exists() && resumed.state.value.data.exports.size == 1)
-        val report = mapOf("ok" to true, "version" to "0.1.0", "fixture" to fixture.name,
+        require(java.util.Locale.getDefault().language == "zh") { "Packaged application locale is not Chinese" }
+        require(javax.swing.UIManager.getString("OptionPane.cancelButtonText") == "取消")
+        val report = mapOf("ok" to true, "version" to "0.1.1", "fixture" to fixture.name,
+            "language" to "zh-CN",
             "pages" to original.pageCount, "records" to original.records.size,
             "checks" to listOf("bundled runtime", "PDF import", "native extraction", "edit and undo", "non-overwriting XLSX export",
                 "favorite persistence", "theme persistence", "restart reload", "actual file deletion", "bundled offline Python"))

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Include>
+  <!-- jpackage's default is 1033 even when its WiX UI uses Chinese. -->
+  <?undef JpProductLanguage ?>
+  <?define JpProductLanguage = "2052" ?>
+</Include>

@@ -56,7 +56,7 @@ object DesktopPdfPreviewBudget {
             else throw InterruptedIOException("已取消预览检查。").apply { initCause(error) }
         } catch (error: Exception) {
             if (isCancelled()) throw InterruptedIOException("已取消预览检查。").apply { initCause(error) }
-            reject("无法在预览预算内读取此图纸：${error.message ?: "目录结构不可用"}。")
+            reject("无法在预览预算内读取此图纸：${UserFacingErrors.describe(error, "目录结构不可用。")}")
         }
     }
 }

@@ -31,6 +31,7 @@ import javax.swing.JOptionPane
 import kotlin.system.exitProcess
 
 fun main(args: Array<String>) {
+    initializeChineseDesktop()
     if (args.firstOrNull() == "--cloud-preview") {
         renderCloudPreviews(File(args.getOrElse(1) { "previews" }))
         exitProcess(0)
@@ -52,12 +53,12 @@ fun main(args: Array<String>) {
         Files.createDirectories(root)
         FileChannel.open(root.resolve("application.lock"), StandardOpenOption.CREATE, StandardOpenOption.WRITE)
     } catch (failure: Exception) {
-        JOptionPane.showMessageDialog(null, "无法打开应用数据目录：${failure.message}", "EPLAN 标签助手", JOptionPane.ERROR_MESSAGE)
+        JOptionPane.showMessageDialog(null, "无法打开应用数据目录：${UserFacingErrors.describe(failure)}", "EPLAN 标签助手", JOptionPane.ERROR_MESSAGE)
         return
     }
     val lock = try { channel.tryLock() } catch (failure: Exception) {
         channel.close()
-        JOptionPane.showMessageDialog(null, "无法锁定应用数据目录：${failure.message}", "EPLAN 标签助手", JOptionPane.ERROR_MESSAGE)
+        JOptionPane.showMessageDialog(null, "无法锁定应用数据目录：${UserFacingErrors.describe(failure)}", "EPLAN 标签助手", JOptionPane.ERROR_MESSAGE)
         return
     }
     if (lock == null) {
@@ -97,7 +98,7 @@ fun main(args: Array<String>) {
             }
             Window(
                 onCloseRequest = { if (state.progress.running) closeDialog = true else finish() },
-                title = "EPLAN 标签助手 · PC 初版 0.1.0",
+                title = "EPLAN 标签助手 · 电脑版 0.1.1",
                 state = rememberWindowState(width = 1360.dp, height = 860.dp,
                     position = WindowPosition(Alignment.Center)),
                 icon = painterResource("branding/app.png"),

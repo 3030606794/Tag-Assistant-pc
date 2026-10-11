@@ -40,7 +40,7 @@ internal fun DesktopRuleEditor(mode: ExtractionMode, initial: RuleSettings, docu
                 }
                 DesktopRuleField(included, { included = it }, "包含柜体", "留空表示全部；多个完整编号用逗号或换行分隔。")
                 DesktopRuleField(excluded, { excluded = it }, "排除柜体", "排除设置优先于包含设置。")
-                if (hasRotations) DesktopRuleField(rotations, { rotations = it }, "方向修正（可选）", "每行柜体=角度，例如 C01=90；单页可用 page:259=90。支持 0、90、180、270。", rotationError)
+                if (hasRotations) DesktopRuleField(rotations, { rotations = it }, "方向修正（可选）", "每行柜体=角度，例如 C01=90；单页可用 page:259=90（第 259 页转 90°）。支持 0、90、180、270。", rotationError)
                 if (hasFunctions) DesktopRuleField(functions, { functions = it }, "设备功能修正（可选）", "每行柜体/设备=功能；多条独立信号用 | 分隔，只修正布局已有器件。", functionError)
                 if (hasCn1) {
                     OutlinedTextField(cores, { cores = it }, label = { Text("每轴默认 CN1 容量") }, singleLine = true,
@@ -51,7 +51,7 @@ internal fun DesktopRuleEditor(mode: ExtractionMode, initial: RuleSettings, docu
                         Switch(spare, { spare = it })
                     }
                 }
-                Text("按真实安装位置提取，保留重复与安装行顺序。功能不从原理图或 BOM 补造；仅指定五类模块缺少功能时补名，仅 FU 加所属安数。提取自动保存，导出无需审核。",
+                Text("按真实安装位置提取，保留重复与安装行顺序。功能不从原理图或物料清单补造；仅指定五类模块缺少功能时补名，仅 FU 加所属安数。提取自动保存，导出无需审核。",
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },

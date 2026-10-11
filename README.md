@@ -1,10 +1,10 @@
-# EPLAN 标签助手 PC · 0.1.0 初版
+# EPLAN 标签助手 PC · 0.1.1 中文版
 
 Windows 10/11 x64 的离线桌面工具。读取 EPLAN 导出的带文字 PDF，提取号码标签，查看来源、编辑结果并直接生成 Excel。Purple 浅深色、跟随系统、Roboto 和 Material Symbols Rounded 延续手机版设计；桌面采用图纸、结果表格、PDF 来源三栏工作台。
 
 ## 使用
 
-1. 安装 EXE/MSI，或完整解压便携包后运行 `EplanTagAssistantPC.exe`。安装包包含 Java 与 Python 运行环境；使用时无需联网、无需安装 Python/Java/Office。
+1. 安装 EXE/MSI，或完整解压便携包后运行 `EPLAN标签助手.exe`。安装包包含 Java 与 Python 运行环境；使用时无需联网、无需安装 Python/Java/Office。安装向导、桌面快捷方式、文件选择框、文本右键菜单及操作提示使用简体中文。
 2. 点击“导入 PDF”或把 PDF 文件拖入窗口。程序保存自己的副本，原始文件不改动。
 3. 选择完整提取或 A–F 六个单项之一并开始。各模式规则独立保存。提取完成自动保存，取消时保留已处理的部分结果。
 4. 结果支持搜索、分类、选择、复制、修改、补充、批量删除和撤销。点标签可在右侧 PDF 查看原文位置。A–F 是各自连续的打印列表，不强制逐行配对。
@@ -31,7 +31,7 @@ Windows 10/11 x64 的离线桌面工具。读取 EPLAN 导出的带文字 PDF，
 
 工作流 `Windows offline preview` 在 Windows runner 执行业务回归、桌面存储测试、Python 工具测试、实际 Compose 浅深色渲染、EXE/MSI/便携包生成，以及打包后可执行程序的导入/提取/编辑/撤销/导出/重启/删除/Python 离线检查。
 
-交付物在成功工作流的 `EplanTagAssistantPC-v0.1.0-Windows-x64` artifact 中，验证报告和预览在 `PC-v0.1.0-cloud-evidence` 中。具体已通过的构建与检查以 [BUILD-RESULT](BUILD-RESULT.md) 为准。
+交付物在成功工作流的 `EplanTagAssistantPC-v0.1.1-Windows-x64` artifact 中，验证报告和预览在 `PC-v0.1.1-cloud-evidence` 中。具体已通过的构建与检查以 [BUILD-RESULT](BUILD-RESULT.md) 为准。安装器通过官方 jpackage 的中文资源构建，并检查独立 MSI 与 EXE 内嵌 MSI 的实际中文语言和文字；保留初版的数据目录、安装目录及升级标识。EPLAN/PDF/Excel、设备编号、输入语法和用户原始文件名不是待翻译的界面内容。
 
 ## 技术与许可
 

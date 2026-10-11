@@ -496,7 +496,7 @@ class DesktopController(val root: Path) : AutoCloseable {
         } while (busy.get() || refreshPending.get())
     }
 
-    private fun describe(error: Throwable): String = error.message?.takeIf { it.isNotBlank() } ?: error.javaClass.simpleName
+    private fun describe(error: Throwable): String = UserFacingErrors.describe(error)
 }
 
 /** Filesystem logic is independently testable without an app window or a controller dispatcher. */
@@ -647,7 +647,7 @@ internal object DesktopExportFiles {
             }
             return Scan(files.sortedByDescending { it.createdAt }, if (uncertain.isEmpty()) null else "部分文件暂时无法读取，已保留其记录。")
         } catch (error: Exception) {
-            return Scan(previous, error.message ?: "导出目录暂时无法读取，已保留文件记录。")
+            return Scan(previous, UserFacingErrors.describe(error, "导出目录暂时无法读取，已保留文件记录。"))
         }
     }
 

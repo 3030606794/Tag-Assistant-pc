@@ -32,11 +32,11 @@ object DesktopPythonTools {
             }
             if (isCancelled()) error("离线检查已取消。")
             val stdout = output.get(10, TimeUnit.SECONDS)
-            val stderr = errors.get(10, TimeUnit.SECONDS)
-            require(process.exitValue() == 0) { "离线工具退出失败：${stderr.take(500)}" }
+            errors.get(10, TimeUnit.SECONDS) // Drain bounded diagnostics without exposing a Python traceback as UI text.
+            require(process.exitValue() == 0) { "离线检查工具未能正常结束，请重试或重新安装完整版本。" }
             val result = JsonParser.parseString(stdout).asJsonObject
             require(result["version"]?.asInt == 1 && result["ok"]?.asBoolean == true) {
-                result["error"]?.asString ?: "离线工具返回了无法读取的结果。"
+                UserFacingErrors.describe(IllegalStateException(result["error"]?.asString), "离线工具返回了无法读取的结果。")
             }
             return result["report"].asString
         } finally {

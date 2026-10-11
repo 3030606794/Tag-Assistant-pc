@@ -99,7 +99,7 @@ internal fun DesktopSettingsPage(state: DesktopState, actions: DesktopActions, m
             Text(section, style = MaterialTheme.typography.headlineSmall)
             when (section) {
                 "外观" -> {
-                    Text("Purple 浅深主题，偏好保存在这台电脑。", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("紫色浅深主题，偏好保存在这台电脑。", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     DesktopThemeMode.entries.forEach { theme ->
                         val title = when (theme) { DesktopThemeMode.SYSTEM -> "跟随系统"; DesktopThemeMode.LIGHT -> "浅色模式"; DesktopThemeMode.DARK -> "深色模式" }
                         Surface(color = if (state.theme == theme) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow, shape = RoundedCornerShape(8.dp)) {
@@ -112,8 +112,8 @@ internal fun DesktopSettingsPage(state: DesktopState, actions: DesktopActions, m
                     Text("为键盘与鼠标安排更宽的工作空间，同时保留熟悉的配色。", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 "关于" -> {
-                    DesktopInfoCard("EPLAN 标签助手", "Windows 离线桌面版。把手抄标签交给程序，把准点下班还给自己；偶尔和 Bug 加个班。")
-                    DesktopInfoCard("完整与单项提取", "读取含原生文字的 EPLAN PDF，按实际安装位置与行序生成标签。A–F 是各自独立的打印列表。提取自动保存，点击导出直接生成 Excel。扫描件与 AI 识别暂未接入。")
+                    DesktopInfoCard("EPLAN 标签助手", "Windows 离线桌面版。把手抄标签交给程序，把准点下班还给自己；偶尔陪程序的小毛病加个班。")
+                    DesktopInfoCard("完整与单项提取", "读取含原生文字的 EPLAN PDF，按实际安装位置与行序生成标签。A–F 是各自独立的打印列表。提取自动保存，点击导出直接生成 Excel。扫描件与人工智能识别暂未接入。")
                     DesktopInfoCard("资料留在本机", "图纸、结果、规则和文件收藏保存在当前电脑。手机与电脑目前各自保存数据，共用提取规则不等于自动同步资料。")
                     OutlinedButton(onClick = actions.openDataFolder, shape = RoundedCornerShape(10.dp)) { Text("打开本机数据目录") }
                 }

@@ -20,11 +20,11 @@ dependencies {
 compose.desktop {
     application {
         mainClass = "cn.guangyao.eplan.MainKt"
-        jvmArgs += listOf("-Xmx2g", "-Dfile.encoding=UTF-8")
+        jvmArgs += listOf("-Xmx2g", "-Dfile.encoding=UTF-8", "-Duser.language=zh", "-Duser.country=CN")
         nativeDistributions {
             targetFormats(TargetFormat.Exe, TargetFormat.Msi)
-            packageName = "EplanTagAssistantPC"
-            packageVersion = "0.1.0"
+            packageName = "EPLAN标签助手"
+            packageVersion = "0.1.1"
             description = "EPLAN 标签助手 · Windows 离线版"
             vendor = "光光"
             copyright = "Copyright 2026 Eplan Pocket contributors"

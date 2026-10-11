@@ -91,6 +91,8 @@ private fun chooseDesktopFiles(directory: Boolean, selected: (List<File>) -> Uni
     SwingUtilities.invokeLater {
         val chooser = JFileChooser().apply {
             dialogTitle = if (directory) "选择 Excel 导出目录" else "导入电气图纸 PDF"
+            approveButtonText = if (directory) "选择文件夹" else "导入"
+            approveButtonToolTipText = if (directory) "将所选文件夹设为 Excel 导出目录" else "导入所选 PDF 图纸，保留原始文件"
             fileSelectionMode = if (directory) JFileChooser.DIRECTORIES_ONLY else JFileChooser.FILES_ONLY
             isMultiSelectionEnabled = !directory
             if (!directory) { fileFilter = FileNameExtensionFilter("PDF 图纸 (*.pdf)", "pdf"); isAcceptAllFileFilterUsed = false }

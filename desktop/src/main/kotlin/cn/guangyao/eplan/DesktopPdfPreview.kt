@@ -113,7 +113,7 @@ internal fun DesktopPdfPreview(document: ImportedDocument?, record: LabelRecord?
         catch (error: CancellationException) { throw error }
         catch (error: DesktopPreviewUnavailable) { inspectedPageCount = error.decision.pageCount; failure = error.message }
         catch (_: OutOfMemoryError) { failure = "此页占用内存较多，暂时无法预览。可用外部 PDF 阅读器打开。" }
-        catch (error: Exception) { failure = error.message ?: "无法预览此页。" }
+        catch (error: Exception) { failure = UserFacingErrors.describe(error, "无法预览此图纸，可用外部阅读器打开。") }
         finally { loading = false }
     }
     LaunchedEffect(page, document?.id) { horizontal.scrollTo(0); vertical.scrollTo(0) }

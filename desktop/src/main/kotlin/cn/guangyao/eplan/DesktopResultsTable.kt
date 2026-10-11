@@ -119,7 +119,7 @@ internal fun DesktopResultsTable(result: ExtractionResult?, canUndo: Boolean, ac
                 IconButton(onClick = ::copy, enabled = selected.isNotEmpty(), modifier = Modifier.size(34.dp)) { Symbol("content_copy", "复制内容 · Ctrl+C") }
                 IconButton(onClick = { editing = selected.singleOrNull() }, enabled = selected.size == 1 && deletable.isNotEmpty(), modifier = Modifier.size(34.dp)) { Symbol("edit", "编辑标签 · F2") }
                 IconButton(onClick = { addOpen = true }, enabled = result.mode.columns.any { it != LabelColumn.QUANTITY }, modifier = Modifier.size(34.dp)) { Symbol("add", "手动补充标签") }
-                IconButton(onClick = { deleteOpen = true }, enabled = deletable.isNotEmpty(), modifier = Modifier.size(34.dp)) { Symbol("delete", "删除选中标签 · Delete") }
+                IconButton(onClick = { deleteOpen = true }, enabled = deletable.isNotEmpty(), modifier = Modifier.size(34.dp)) { Symbol("delete", "删除选中标签 · 删除键") }
                 Text("${visible.size} 行 · 已选 ${selected.size}", Modifier.weight(1f).padding(start = 6.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (result.issues.isNotEmpty()) TextButton(onClick = { issuesOpen = !issuesOpen }, contentPadding = PaddingValues(horizontal = 6.dp)) { Text("说明 ${result.issues.size}", style = MaterialTheme.typography.labelSmall) }
             }
@@ -178,20 +178,20 @@ internal fun DesktopResultsTable(result: ExtractionResult?, canUndo: Boolean, ac
             }
             HorizontalScrollbar(rememberScrollbarAdapter(tableHorizontal), Modifier.align(Alignment.BottomCenter).fillMaxWidth())
         }
-        Text("各类型按原始顺序独立排列 · 双击/F2 编辑 · Ctrl/Shift 多选", Modifier.padding(horizontal = 12.dp, vertical = 8.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text("各类型按原始顺序独立排列 · 双击或 F2 编辑 · 按住 Ctrl 或 Shift 多选", Modifier.padding(horizontal = 12.dp, vertical = 8.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
     result.records.find { it.id == editing }?.takeIf { it.kind == RecordKind.LABEL && it.column != LabelColumn.QUANTITY }?.let { record ->
         DesktopLabelEditor(record, onSave = { text ->
             runCatching { LabelEdits.change(result, record.id, text) }.fold(
                 onSuccess = { actions.editRecord(record.id, text); editing = null; null },
-                onFailure = { it.message ?: "此标签无法保存，请检查内容。" },
+                onFailure = { UserFacingErrors.describe(it) },
             )
         }, onDismiss = { editing = null })
     }
     if (addOpen) DesktopAddLabel(result, onSave = { type, layout, text ->
         runCatching { LabelEdits.add(result, type, layout, text) }.fold(
             onSuccess = { actions.addRecord(type, layout, text); addOpen = false; null },
-            onFailure = { it.message ?: "此标签无法添加，请检查内容。" },
+            onFailure = { UserFacingErrors.describe(it) },
         )
     }, onDismiss = { addOpen = false })
     if (deleteOpen) AlertDialog(onDismissRequest = { deleteOpen = false }, shape = RoundedCornerShape(12.dp), title = { Text("删除 ${deletable.size} 条标签？") },
@@ -220,7 +220,7 @@ private fun DesktopLabelEditor(record: LabelRecord, onSave: (String) -> String?,
                     if (event.type == KeyEventType.KeyDown && event.isCtrlPressed && event.key == Key.Enter && text.composition == null && valid) { save(); true } else false
                 }, shape = RoundedCornerShape(8.dp))
             if (record.edited) Text("原始内容：${record.sourceText}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        } }, confirmButton = { Button(onClick = ::save, enabled = valid && text.composition == null, shape = RoundedCornerShape(10.dp)) { Text("保存 · Ctrl+Enter") } },
+        } }, confirmButton = { Button(onClick = ::save, enabled = valid && text.composition == null, shape = RoundedCornerShape(10.dp)) { Text("保存 · Ctrl+回车") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } })
 }
 
